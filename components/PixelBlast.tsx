@@ -51,6 +51,10 @@ type PixelBlastProps = {
   transparent?: boolean;
   edgeFade?: number;
   noiseAmount?: number;
+  /** Cap device pixel ratio for lower-res rendering (e.g. 1 for backgrounds). */
+  maxPixelRatio?: number;
+  /** Target FPS; animates at lower rate to save CPU/GPU (e.g. 30). */
+  targetFps?: number;
 };
 
 const createTouchTexture = (): TouchTexture => {
@@ -372,11 +376,15 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
   speed = 0.5,
   transparent = true,
   edgeFade = 0.5,
-  noiseAmount = 0
+  noiseAmount = 0,
+  maxPixelRatio,
+  targetFps
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const visibilityRef = useRef({ visible: true });
   const speedRef = useRef(speed);
+  const targetFpsRef = useRef(targetFps);
+  targetFpsRef.current = targetFps;
 
   const threeRef = useRef<{
     renderer: THREE.WebGLRenderer;
@@ -445,10 +453,18 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
         alpha: true,
         powerPreference: 'high-performance'
       });
-      renderer.domElement.style.width = '100%';
-      renderer.domElement.style.height = '100%';
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      container.appendChild(renderer.domElement);
+      const canvasEl = renderer.domElement;
+      canvasEl.style.width = '100%';
+      canvasEl.style.height = '100%';
+      canvasEl.style.display = 'block';
+      canvasEl.style.transform = 'translateZ(0)';
+      canvasEl.style.pointerEvents = enableRipples ? 'auto' : 'none';
+      const deviceRatio = window.devicePixelRatio || 1;
+      const cappedRatio = maxPixelRatio != null
+        ? Math.min(deviceRatio, maxPixelRatio)
+        : Math.min(deviceRatio, 2);
+      renderer.setPixelRatio(cappedRatio);
+      container.appendChild(canvasEl);
       if (transparent) renderer.setClearAlpha(0);
       else renderer.setClearColor(0x000000, 1);
       const uniforms = {
@@ -574,18 +590,23 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
         const { fx, fy, w, h } = mapToPixels(e);
         touch.addTouch({ x: fx / w, y: fy / h });
       };
-      renderer.domElement.addEventListener('pointerdown', onPointerDown, {
-        passive: true
-      });
-      renderer.domElement.addEventListener('pointermove', onPointerMove, {
-        passive: true
-      });
+      if (enableRipples) {
+        renderer.domElement.addEventListener('pointerdown', onPointerDown, {
+          passive: true
+        });
+        renderer.domElement.addEventListener('pointermove', onPointerMove, {
+          passive: true
+        });
+      }
       let raf = 0;
-      const animate = () => {
-        if (autoPauseOffscreen && !visibilityRef.current.visible) {
-          raf = requestAnimationFrame(animate);
-          return;
-        }
+      let lastFrameTime = 0;
+      const minFrameInterval = targetFpsRef.current ? 1000 / targetFpsRef.current : 0;
+      const animate = (now: number) => {
+        raf = requestAnimationFrame(animate);
+        if (autoPauseOffscreen && !visibilityRef.current.visible) return;
+        if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+        if (minFrameInterval > 0 && now - lastFrameTime < minFrameInterval) return;
+        lastFrameTime = now;
         uniforms.uTime.value = timeOffset + clock.getElapsedTime() * speedRef.current;
         if (liquidEffect) {
           const liqEffect = liquidEffect as Effect & { uniforms: Map<string, THREE.Uniform> };
@@ -605,7 +626,6 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
           });
           composer.render();
         } else renderer.render(scene, camera);
-        raf = requestAnimationFrame(animate);
       };
       raf = requestAnimationFrame(animate);
       threeRef.current = {
@@ -682,13 +702,28 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
     autoPauseOffscreen,
     variant,
     color,
-    speed
+    speed,
+    maxPixelRatio
   ]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !autoPauseOffscreen) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry) visibilityRef.current.visible = entry.isIntersecting;
+      },
+      { threshold: 0, rootMargin: '50px' }
+    );
+    io.observe(container);
+    return () => io.disconnect();
+  }, [autoPauseOffscreen]);
 
   return (
     <div
       ref={containerRef}
-      className={`w-full h-full relative overflow-hidden ${className ?? ''}`}
+      className={`relative h-full w-full overflow-hidden contain-strict isolation-isolate ${className ?? ''}`}
       style={style}
       aria-label="PixelBlast interactive background"
     />
