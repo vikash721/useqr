@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
  */
 export const PATHS_WITHOUT_SIDEBAR: string[] = [
   "/",
+  "/about",
   "/login",
   // "/signup",
   // "/auth",

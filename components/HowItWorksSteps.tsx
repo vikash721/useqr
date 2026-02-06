@@ -17,7 +17,7 @@ export function HowItWorksSteps({ steps, className }: HowItWorksStepsProps) {
   return (
     <div
       className={cn(
-        "grid w-full gap-8 sm:gap-12 lg:grid-cols-3 lg:gap-6",
+        "grid w-full gap-8 sm:gap-12 lg:grid-cols-4 lg:gap-6",
         className
       )}
     >

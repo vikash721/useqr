@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Image, Link2, RefreshCw, UserCircle } from "lucide-react";
+import { Image, Link2, Package, RefreshCw, UserCircle } from "lucide-react";
 import PixelBlast from "@/components/PixelBlast";
 import PixelCard from "@/components/PixelCard";
 import LetterGlitch from "@/components/LetterGlitch";
@@ -211,7 +211,7 @@ export default function Home() {
               <p className="mx-auto mt-6 max-w-xl text-center text-zinc-400">
                 Custom QR codes that fit how you work—store anything, reuse forever, get found.
               </p>
-              <div className="relative mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="relative mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
                 <UseCaseCard
                   label="Use case"
                   number={1}
@@ -245,6 +245,15 @@ export default function Home() {
                   icon={UserCircle}
                   title="Get found"
                   description="Put your contact on keys, bags, or gear. Anyone who finds it can reach you."
+                  accent="emerald"
+                  className="min-h-[260px]"
+                />
+                <UseCaseCard
+                  label="Use case"
+                  number={5}
+                  icon={Package}
+                  title="Print & deliver"
+                  description="Order your QR in different styles—stickers, cards, labels, signage. We print and ship to your door."
                   accent="emerald"
                   className="min-h-[260px]"
                 />
@@ -287,6 +296,12 @@ export default function Home() {
                       title: "Share",
                       description:
                         "Use it anywhere. Update the content anytime—same code, new info. Reuse forever.",
+                    },
+                    {
+                      number: 4,
+                      title: "Print & deliver",
+                      description:
+                        "Order your QR in different styles—stickers, cards, labels, signage. We handle printing and shipping to your door.",
                     },
                   ]}
                 />

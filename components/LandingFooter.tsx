@@ -11,7 +11,7 @@ const FOOTER_LINKS = {
     { label: "Download", href: "#" },
   ],
   company: [
-    { label: "About", href: "#" },
+    { label: "About", href: "/about" },
     { label: "Blog", href: "#" },
     { label: "Contact", href: "#" },
   ],
