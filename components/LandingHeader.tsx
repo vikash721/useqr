@@ -125,7 +125,7 @@ export function LandingHeader() {
             className="rounded-none bg-zinc-800/90 text-white hover:bg-zinc-700"
             asChild
           >
-            <Link href="#">Log in</Link>
+            <Link href="/login">Log in</Link>
           </Button>
           <Button
             size="default"

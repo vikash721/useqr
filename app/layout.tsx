@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ConditionalSidebarLayout } from "@/components/ConditionalSidebarLayout";
+import { Toaster } from "@/components/Toaster";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,6 +30,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
         <ConditionalSidebarLayout>{children}</ConditionalSidebarLayout>
+        <Toaster />
       </body>
     </html>
   );

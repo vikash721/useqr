@@ -8,8 +8,8 @@ import { usePathname } from "next/navigation";
  * Use exact paths like "/login" or prefixes like "/auth" to hide on nested routes (e.g. /auth/callback).
  */
 export const PATHS_WITHOUT_SIDEBAR: string[] = [
-  "/"
-  // "/login",
+  "/",
+  "/login",
   // "/signup",
   // "/auth",
 ];
