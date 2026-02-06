@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Image, Link2, Package, RefreshCw, UserCircle } from "lucide-react";
+import DynamicLandingQR from "@/components/DynamicLandingQR";
 import PixelBlast from "@/components/PixelBlast";
 import PixelCard from "@/components/PixelCard";
 import LetterGlitch from "@/components/LetterGlitch";
-import MetallicPaint from "@/components/MetallicPaint";
 import { FAQSection } from "@/components/FAQSection";
 import { HowItWorksSteps } from "@/components/HowItWorksSteps";
 import { LandingFooter } from "@/components/LandingFooter";
@@ -13,7 +13,9 @@ import { LandingHeader } from "@/components/LandingHeader";
 import ScrollFloat from "@/components/ScrollFloat";
 import { UseCaseCard } from "@/components/UseCaseCard";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { api } from "@/lib/axios";
 import { showDevelopmentNotice } from "@/lib/toast";
+import { useScanStore } from "@/stores/useScanStore";
 import { useShouldShowHeader } from "@/utils/sidebar";
 
 function HeroBackground() {
@@ -74,8 +76,43 @@ function HeroBackground() {
   );
 }
 
+const POLL_INTERVAL_MS = 2500;
+
 export default function Home() {
   const showHeader = useShouldShowHeader();
+  const qrId = useScanStore((s) => s.qrId);
+  const scanStatus = useScanStore((s) => s.scanStatus);
+  const initQrId = useScanStore((s) => s.initQrId);
+  const setScanStatus = useScanStore((s) => s.setScanStatus);
+  const reset = useScanStore((s) => s.reset);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Init stable qrId when landing is shown
+  useEffect(() => {
+    if (!showHeader) initQrId();
+  }, [showHeader, initQrId]);
+
+  // Poll scan status when we have qrId and not yet scanned
+  useEffect(() => {
+    if (showHeader || !qrId || scanStatus?.scanned) return;
+    const poll = () => {
+      api.get<{ scanned: boolean; scannedAt?: number }>(`/api/scan/status?qrId=${encodeURIComponent(qrId)}`).then((res) => {
+        setScanStatus(res.data);
+        if (res.data.scanned && pollRef.current) {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+        }
+      }).catch(() => {});
+    };
+    poll();
+    pollRef.current = setInterval(poll, POLL_INTERVAL_MS);
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, [showHeader, qrId, scanStatus?.scanned, setScanStatus]);
 
   // Development notice on landing — show on every refresh/visit (delay so Toaster is mounted)
   useEffect(() => {
@@ -129,7 +166,7 @@ export default function Home() {
                   </a>
                 </div>
               </div>
-              <div className="flex shrink-0 flex-col items-center">
+              <div className="relative flex shrink-0 flex-col items-center">
                 <PixelCard
                   variant="default"
                   colors="#94a3b8,#64748b,#475569"
@@ -137,6 +174,27 @@ export default function Home() {
                   speed={30}
                   className="h-[340px] w-[280px] rounded-none border-white/10 bg-zinc-900/95 shadow-2xl shadow-black/30 lg:h-[380px] lg:w-[300px]"
                 >
+                  {/* Thank you overlay when scanned */}
+                  {scanStatus?.scanned && (
+                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 rounded-none bg-zinc-900/95 px-4">
+                      <p className="text-center text-lg font-semibold text-white">
+                        Thank you
+                      </p>
+                      <p className="text-center text-sm text-zinc-400">
+                        Thanks for scanning.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          reset();
+                          initQrId();
+                        }}
+                        className="rounded-none border border-white/20 bg-white/5 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
+                      >
+                        Scan again
+                      </button>
+                    </div>
+                  )}
                   {/* Visiting card: QR on top (no inner padding), info at bottom */}
                   <div className="absolute inset-0 flex flex-col p-0">
                     {/* QR — LetterGlitch bg, QR on top */}
@@ -153,21 +211,7 @@ export default function Home() {
                       </div>
                       <div className="relative z-10 flex flex-1 items-center justify-center p-4">
                         <div className="h-[140px] w-[140px] shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.08)] backdrop-blur-sm lg:h-[160px] lg:w-[160px]">
-                          <MetallicPaint
-                            imageSrc="/qr-code.svg"
-                            lightColor="#e2e8f0"
-                            darkColor="#1e293b"
-                            brightness={1.6}
-                            contrast={0.4}
-                            scale={3.5}
-                            refraction={0.005}
-                            blur={0.008}
-                            liquid={0.35}
-                            speed={0.15}
-                            waveAmplitude={0.35}
-                            chromaticSpread={0.7}
-                            tintColor="#ffffff"
-                          />
+                          <DynamicLandingQR qrId={qrId} />
                         </div>
                       </div>
                     </div>
@@ -176,7 +220,7 @@ export default function Home() {
                     {/* Content — tagline, contact */}
                     <div className="flex min-h-0 flex-1 flex-col justify-center px-4 py-3 text-center lg:px-5 lg:py-4">
                       <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-500 lg:text-xs">
-                        One code. Any content.
+                        Scan for surprise
                       </p>
                       <div className="mt-2 flex flex-wrap justify-center gap-x-3 text-[10px] text-zinc-400 lg:mt-2.5 lg:text-xs">
                         <span>useqr.codes</span>
