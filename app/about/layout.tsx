@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://useqr.app";
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://useqr.codes";
 
 export const metadata: Metadata = {
   title: "About UseQR",

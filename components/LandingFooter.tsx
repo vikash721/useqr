@@ -6,8 +6,8 @@ import Link from "next/link";
 const FOOTER_LINKS = {
   product: [
     { label: "Features", href: "#" },
-    { label: "Pricing", href: "#" },
-    { label: "Docs", href: "#" },
+    { label: "Pricing", href: "/pricing" },
+    { label: "About", href: "/about" },
     { label: "Download", href: "#" },
   ],
   company: [

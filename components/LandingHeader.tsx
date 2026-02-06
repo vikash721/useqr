@@ -3,6 +3,8 @@
 import { ChevronDown, Gift } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
+import { AppUnderDevelopmentModal } from "@/components/modals";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -21,8 +23,8 @@ type NavLink =
     };
 
 const NAV_LINKS: NavLink[] = [
-  { label: "Docs", href: "#" },
-  { label: "Pricing", href: "#" },
+  { label: "About", href: "/about" },
+  { label: "Pricing", href: "/pricing" },
 
   {
     label: "Designs",
@@ -46,8 +48,11 @@ const NAV_LINKS: NavLink[] = [
 ];
 
 export function LandingHeader() {
+  const [appModalOpen, setAppModalOpen] = useState(false);
+
   return (
-    <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between border-b border-white/10 bg-black/95 px-6 backdrop-blur supports-backdrop-filter:bg-black/80">
+    <>
+      <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between border-b border-white/10 bg-black/95 px-6 backdrop-blur supports-backdrop-filter:bg-black/80">
       {/* Left: Logo + Nav */}
       <div className="flex items-center gap-8">
         <Link
@@ -112,11 +117,11 @@ export function LandingHeader() {
       {/* Right: Gift link + Log in + Download */}
       <div className="flex items-center gap-6">
         <Link
-          href="#"
+          href="/signup"
           className="hidden items-center gap-2 text-sm font-medium text-white transition-opacity hover:opacity-90 sm:flex"
         >
           <Gift className="size-4 text-emerald-500" />
-          Claim Anniversary Gift
+          Claim your free QR
         </Link>
         <div className="flex items-center gap-3">
           <Button
@@ -129,13 +134,19 @@ export function LandingHeader() {
           </Button>
           <Button
             size="default"
+            type="button"
             className="rounded-none bg-emerald-500 text-white hover:bg-emerald-600"
-            asChild
+            onClick={() => setAppModalOpen(true)}
           >
-            <Link href="#">Download</Link>
+            Get App
           </Button>
         </div>
       </div>
     </header>
+      <AppUnderDevelopmentModal
+        open={appModalOpen}
+        onOpenChange={setAppModalOpen}
+      />
+    </>
   );
 }

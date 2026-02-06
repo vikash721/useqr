@@ -14,16 +14,23 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://useqr.app";
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://useqr.codes";
+
+const defaultTitle =
+  "Get reusable QR codes. Store anything—links, video, contact. Yours forever.";
+const defaultDescription =
+  "Create custom QR codes for images, video, links, or your contact. Reusable, updatable—stick them anywhere. Get found. UseQR makes it simple.";
+const ogImageUrl = `${siteUrl}/landing-page.png`;
+const ogImageAlt =
+  "UseQR – One QR. Any content. Yours forever. Create custom QR codes. Get started free.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "UseQR – One QR. Any content. Yours forever.",
+    default: defaultTitle,
     template: "%s | UseQR",
   },
-  description:
-    "Create custom QR codes for images, video, links, or your contact. Reusable, updatable—stick them anywhere. Get found. UseQR makes it simple.",
+  description: defaultDescription,
   keywords: [
     "QR code",
     "custom QR code",
@@ -51,24 +58,22 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: siteUrl,
     siteName: "UseQR",
-    title: "UseQR – One QR. Any content. Yours forever.",
-    description:
-      "Create custom QR codes for images, video, links, or your contact. Reusable, updatable—stick them anywhere. Get found.",
+    title: defaultTitle,
+    description: defaultDescription,
     images: [
       {
-        url: "/landing-page.png",
+        url: ogImageUrl,
         width: 1200,
         height: 630,
-        alt: "UseQR – One QR. Any content. Yours forever. Create custom QR codes for links, images, video, or your contact.",
+        alt: ogImageAlt,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "UseQR – One QR. Any content. Yours forever.",
-    description:
-      "Create custom QR codes for images, video, links, or your contact. Reusable, updatable—stick them anywhere. Get found.",
-    images: ["/landing-page.png"],
+    title: defaultTitle,
+    description: defaultDescription,
+    images: [ogImageUrl],
     creator: "@useqr",
   },
   alternates: {

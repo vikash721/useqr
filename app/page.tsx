@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Image, Link2, Package, RefreshCw, UserCircle } from "lucide-react";
+import Link from "next/link";
 import DynamicLandingQR from "@/components/DynamicLandingQR";
 import PixelBlast from "@/components/PixelBlast";
 import PixelCard from "@/components/PixelCard";
@@ -76,7 +77,7 @@ function HeroBackground() {
   );
 }
 
-const POLL_INTERVAL_MS = 2500;
+const POLL_INTERVAL_MS = 4000;
 
 export default function Home() {
   const showHeader = useShouldShowHeader();
@@ -297,7 +298,7 @@ export default function Home() {
                   number={5}
                   icon={Package}
                   title="Print & deliver"
-                  description="Order your QR in different styles—stickers, cards, labels, signage. We print and ship to your door."
+                  description="Order your QR in different styles—stickers, cards, labels. We print and ship."
                   accent="emerald"
                   className="min-h-[260px]"
                 />
@@ -345,10 +346,31 @@ export default function Home() {
                       number: 4,
                       title: "Print & deliver",
                       description:
-                        "Order your QR in different styles—stickers, cards, labels, signage. We handle printing and shipping to your door.",
+                        "Order your QR in different styles—stickers, cards, labels. We print and ship.",
                     },
                   ]}
                 />
+              </div>
+            </section>
+
+            {/* Pricing — link to /pricing */}
+            <section className="relative z-10 w-full border-t border-white/10 bg-black px-6 py-20 lg:py-24">
+              <div className="mx-auto max-w-2xl text-center">
+                <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+                  Plans
+                </p>
+                <h2 className="mt-3 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                  Free to start. From <span className="text-emerald-400">$2</span>/month when you need more.
+                </h2>
+                <p className="mt-4 text-zinc-400">
+                  Compare plans and pick the one that fits. No hidden fees.
+                </p>
+                <Link
+                  href="/pricing"
+                  className="mt-8 inline-flex h-11 items-center justify-center rounded-none bg-emerald-500 px-8 text-sm font-medium text-white transition-colors hover:bg-emerald-600"
+                >
+                  See plans & pricing
+                </Link>
               </div>
             </section>
 
