@@ -11,6 +11,7 @@ import { FAQSection } from "@/components/FAQSection";
 import { HowItWorksSteps } from "@/components/HowItWorksSteps";
 import { LandingFooter } from "@/components/LandingFooter";
 import { LandingHeader } from "@/components/LandingHeader";
+import { MissionPassedModal } from "@/components/modals";
 import ScrollFloat from "@/components/ScrollFloat";
 import { UseCaseCard } from "@/components/UseCaseCard";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -125,8 +126,19 @@ export default function Home() {
     }
   }, [showHeader]);
 
+  const missionPassedOpen = Boolean(scanStatus?.scanned);
+
   return (
     <>
+      <MissionPassedModal
+        open={missionPassedOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            reset();
+            initQrId();
+          }
+        }}
+      />
       {showHeader ? (
         <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
           <SidebarTrigger />
@@ -160,7 +172,7 @@ export default function Home() {
                     Get started
                   </a>
                   <a
-                    href="#"
+                    href="/about"
                     className="inline-flex h-10 items-center justify-center rounded-none border border-white/20 bg-white/5 px-6 text-sm font-medium text-white transition-colors hover:bg-white/10"
                   >
                     Learn more
@@ -175,27 +187,6 @@ export default function Home() {
                   speed={30}
                   className="h-[340px] w-[280px] rounded-none border-white/10 bg-zinc-900/95 shadow-2xl shadow-black/30 lg:h-[380px] lg:w-[300px]"
                 >
-                  {/* Thank you overlay when scanned */}
-                  {scanStatus?.scanned && (
-                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 rounded-none bg-zinc-900/95 px-4">
-                      <p className="text-center text-lg font-semibold text-white">
-                        Thank you
-                      </p>
-                      <p className="text-center text-sm text-zinc-400">
-                        Thanks for scanning.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          reset();
-                          initQrId();
-                        }}
-                        className="rounded-none border border-white/20 bg-white/5 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
-                      >
-                        Scan again
-                      </button>
-                    </div>
-                  )}
                   {/* Visiting card: QR on top (no inner padding), info at bottom */}
                   <div className="absolute inset-0 flex flex-col p-0">
                     {/* QR — LetterGlitch bg, QR on top */}

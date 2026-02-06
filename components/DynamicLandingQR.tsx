@@ -19,8 +19,9 @@ export default function DynamicLandingQR({ qrId }: { qrId: string | null }) {
     const origin =
       typeof window !== "undefined"
         ? window.location.origin
-        : process.env.NEXT_PUBLIC_APP_URL ?? "";
+        : process.env.NEXT_PUBLIC_APP_URL ?? "https://useqr.codes";
     const data = `${origin}/card/${qrId}`;
+    console.log(data, "data");
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
 
