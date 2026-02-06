@@ -122,4 +122,13 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Premium selection: white highlight, black text */
+  ::selection {
+    background-color: white;
+    color: black;
+  }
+  ::-moz-selection {
+    background-color: white;
+    color: black;
+  }
 }

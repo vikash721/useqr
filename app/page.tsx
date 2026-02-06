@@ -179,9 +179,7 @@ export default function Home() {
                         One code. Any content.
                       </p>
                       <div className="mt-2 flex flex-wrap justify-center gap-x-3 text-[10px] text-zinc-400 lg:mt-2.5 lg:text-xs">
-                        <span>hello@useqr.app</span>
-                        <span className="text-white/30">·</span>
-                        <span>useqr.app</span>
+                        <span>useqr.codes</span>
                       </div>
                     </div>
                     {/* Brand — logo + name at bottom */}
