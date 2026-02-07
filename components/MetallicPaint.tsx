@@ -163,11 +163,19 @@ interface MetallicPaintProps {
   distortion?: number;
   contour?: number;
   tintColor?: string;
+  /** When set, the effect runs for runDuration ms then pauses for this many ms (e.g. 2500 for 2.5s) before repeating */
+  pauseDuration?: number;
+  /** How long the effect runs before each pause (ms). Used only when pauseDuration > 0 */
+  runDuration?: number;
+  /** Max run+pause cycles before stopping (e.g. 3 = animate 3 times then freeze). Omit for infinite */
+  maxCycles?: number;
+  /** Called when maxCycles run phases have completed (e.g. to remove effect and show plain content) */
+  onAnimationComplete?: () => void;
 }
 
 function processImage(img: HTMLImageElement): ImageData {
-  const MAX_SIZE = 1000;
-  const MIN_SIZE = 500;
+  const MAX_SIZE = 600;
+  const MIN_SIZE = 400;
   let width = img.naturalWidth || img.width;
   let height = img.naturalHeight || img.height;
 
@@ -296,7 +304,11 @@ export default function MetallicPaint({
   mouseAnimation = false,
   distortion = 1,
   contour = 0.2,
-  tintColor = '#feb3ff'
+  tintColor = '#feb3ff',
+  pauseDuration = 0,
+  runDuration = 4000,
+  maxCycles,
+  onAnimationComplete
 }: MetallicPaintProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<WebGL2RenderingContext | null>(null);
@@ -305,11 +317,17 @@ export default function MetallicPaint({
   const textureRef = useRef<WebGLTexture | null>(null);
   const animTimeRef = useRef(0);
   const lastTimeRef = useRef(0);
+  const cycleTimeRef = useRef(0); // 0..runDuration+pauseDuration, for run-then-pause
+  const runPhasesCompletedRef = useRef(0); // how many run phases finished (stop after maxCycles so last frame is end of run)
   const rafRef = useRef<number | null>(null);
+  const lastDrawRef = useRef(0);
   const imgDataRef = useRef<ImageData | null>(null);
   const speedRef = useRef(speed);
   const mouseRef = useRef({ x: 0.5, y: 0.5, targetX: 0.5, targetY: 0.5 });
   const mouseAnimRef = useRef(mouseAnimation);
+  const pauseDurationRef = useRef(pauseDuration);
+  const runDurationRef = useRef(runDuration);
+  const maxCyclesRef = useRef(maxCycles);
 
   const [ready, setReady] = useState(false);
   const [textureReady, setTextureReady] = useState(false);
@@ -320,6 +338,11 @@ export default function MetallicPaint({
   useEffect(() => {
     mouseAnimRef.current = mouseAnimation;
   }, [mouseAnimation]);
+  useEffect(() => {
+    pauseDurationRef.current = pauseDuration;
+    runDurationRef.current = runDuration;
+    maxCyclesRef.current = maxCycles;
+  }, [pauseDuration, runDuration, maxCycles]);
 
   const initGL = useCallback(() => {
     const canvas = canvasRef.current;
@@ -410,7 +433,8 @@ export default function MetallicPaint({
     const gl = glRef.current;
     if (!canvas || !gl) return;
 
-    const side = 1000 * devicePixelRatio;
+    // Cap resolution to reduce GPU load (was 1000*dPR, often 2000+ on retina)
+    const side = Math.min(1000 * devicePixelRatio, 1024);
     canvas.width = side;
     canvas.height = side;
     gl.viewport(0, 0, side, side);
@@ -505,6 +529,8 @@ export default function MetallicPaint({
 
     canvas.addEventListener('mousemove', handleMouseMove);
 
+    const DRAW_INTERVAL_MS = 1000 / 30; // ~30fps draw to reduce GPU load
+
     const render = (time: number) => {
       const delta = time - lastTimeRef.current;
       lastTimeRef.current = time;
@@ -514,15 +540,51 @@ export default function MetallicPaint({
         mouse.y += (mouse.targetY - mouse.y) * 0.08;
         animTimeRef.current = mouse.x * 3000 + mouse.y * 1500;
       } else {
-        animTimeRef.current += delta * speedRef.current;
+        const pauseDur = pauseDurationRef.current;
+        const runDur = runDurationRef.current;
+        const maxCyclesVal = maxCyclesRef.current;
+        if (pauseDur > 0 && runDur > 0) {
+          const prevCycleTime = cycleTimeRef.current;
+          cycleTimeRef.current += delta;
+          const totalCycle = runDur + pauseDur;
+          if (cycleTimeRef.current >= totalCycle) {
+            cycleTimeRef.current -= totalCycle;
+          }
+          // Just finished a run phase (crossed from run into pause) → count it; stop after maxCycles so last frame is exact end of run
+          if (
+            maxCyclesVal != null &&
+            cycleTimeRef.current >= runDur &&
+            cycleTimeRef.current < totalCycle &&
+            prevCycleTime < runDur
+          ) {
+            runPhasesCompletedRef.current += 1;
+            if (runPhasesCompletedRef.current >= maxCyclesVal) {
+              const runMsThisFrame = runDur - prevCycleTime;
+              animTimeRef.current += runMsThisFrame * speedRef.current;
+              gl.uniform1f(u.u_time, animTimeRef.current);
+              gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+              onAnimationComplete?.();
+              return;
+            }
+          }
+          if (cycleTimeRef.current < runDur) {
+            animTimeRef.current += delta * speedRef.current;
+          }
+        } else {
+          animTimeRef.current += delta * speedRef.current;
+        }
       }
 
-      gl.uniform1f(u.u_time, animTimeRef.current);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      if (time - lastDrawRef.current >= DRAW_INTERVAL_MS) {
+        lastDrawRef.current = time;
+        gl.uniform1f(u.u_time, animTimeRef.current);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      }
       rafRef.current = requestAnimationFrame(render);
     };
 
     lastTimeRef.current = performance.now();
+    lastDrawRef.current = performance.now();
     rafRef.current = requestAnimationFrame(render);
 
     return () => {

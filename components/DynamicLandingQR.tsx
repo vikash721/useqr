@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import MetallicPaint from "@/components/MetallicPaint";
 
+/** After this many run cycles the metallic effect is removed and the plain QR is shown */
+const METALLIC_CYCLES = 4;
+
 /**
  * Renders a unique ID–based QR code with the same look and theme as the static
  * landing QR (white box, dark modules, metallic effect). Uses qr-code-styling
@@ -21,7 +24,10 @@ export default function DynamicLandingQR({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [metallicComplete, setMetallicComplete] = useState(false);
   const objectUrlRef = useRef<string | null>(null);
+
+  const showPlainQR = revealed || metallicComplete;
 
   useEffect(() => {
     if (typeof window === "undefined" || !containerRef.current || !qrId) return;
@@ -101,35 +107,40 @@ export default function DynamicLandingQR({
 
       {qrDataUrl ? (
         <>
-          {/* Clean scannable QR — always mounted, visible when revealed */}
+          {/* Clean scannable QR — visible when hover/revealed or after metallic cycles complete */}
           <img
             src={qrDataUrl}
             alt="Scannable QR code"
             className="absolute inset-0 h-full w-full object-contain transition-opacity duration-300"
-            style={{ opacity: revealed ? 1 : 0 }}
+            style={{ opacity: showPlainQR ? 1 : 0 }}
             draggable={false}
           />
 
-          {/* Metallic effect — fades out on hover / tap */}
+          {/* Metallic effect — fades out on hover / tap or when cycles complete */}
           <div
             className="absolute inset-0 transition-opacity duration-300"
-            style={{ opacity: revealed ? 0 : 1 }}
+            style={{ opacity: showPlainQR ? 0 : 1 }}
             aria-hidden
           >
             <MetallicPaint
               imageSrc={qrDataUrl}
-              lightColor="#e2e8f0"
-              darkColor="#1e293b"
-              brightness={1.6}
-              contrast={0.4}
+              lightColor="#94a3b8"
+              darkColor="#020617"
+              brightness={1.55}
+              contrast={1.2}
               scale={3.5}
-              refraction={0.005}
-              blur={0.008}
-              liquid={0.35}
+              refraction={0.006}
+              blur={0.004}
+              liquid={0.28}
               speed={0.15}
               waveAmplitude={0.35}
-              chromaticSpread={0.7}
+              chromaticSpread={0.5}
+              patternSharpness={1.5}
               tintColor="#ffffff"
+              runDuration={3800}
+              pauseDuration={50}
+              maxCycles={METALLIC_CYCLES}
+              onAnimationComplete={() => setMetallicComplete(true)}
             />
           </div>
 
