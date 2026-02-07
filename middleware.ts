@@ -33,6 +33,13 @@ export default clerkMiddleware(
     return NextResponse.next();
   },
   {
-    contentSecurityPolicy: {},
+    contentSecurityPolicy: {
+      directives: {
+        // qr-code-styling internally renders the QR as an SVG data-URI loaded
+        // into an <img> before drawing to canvas. Without "data:" and "blob:"
+        // here, the browser's CSP blocks that load and the QR never appears.
+        "img-src": ["data:", "blob:"],
+      },
+    },
   }
 );
