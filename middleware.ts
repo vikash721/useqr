@@ -38,7 +38,8 @@ export default clerkMiddleware(
         // qr-code-styling internally renders the QR as an SVG data-URI loaded
         // into an <img> before drawing to canvas. Without "data:" and "blob:"
         // here, the browser's CSP blocks that load and the QR never appears.
-        "img-src": ["data:", "blob:"],
+        // Giphy GIF in MissionPassedModal
+        "img-src": ["data:", "blob:", "https://media2.giphy.com", "https://*.giphy.com"],
       },
     },
   }

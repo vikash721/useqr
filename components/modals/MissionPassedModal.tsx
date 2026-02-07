@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { Volume2 } from "lucide-react";
 import {
   Dialog,
@@ -97,27 +96,15 @@ export function MissionPassedModal({
             aria-hidden
           />
           <div className="relative flex flex-col items-center gap-6">
-            {/* GTA Respect GIF (Tenor) with mission-passed image as fallback */}
+            {/* GTA Respect GIF (Giphy) — img avoids CSP frame-src / iframe blocking */}
             <div
               className="relative aspect-video w-full max-w-[320px] overflow-hidden rounded-none sm:max-w-[380px]"
               style={{ aspectRatio: "1.77778" }}
             >
-              {/* Fallback image — shown when iframe fails or is blocked */}
-              <Image
-                src="/mission-passed.png"
-                alt="Mission Passed"
-                fill
-                className="object-contain drop-shadow-[0_0_24px_rgba(245,158,11,0.25)]"
-                aria-hidden
-              />
-              <iframe
-                src="https://tenor.com/embed/17882011"
-                width="100%"
-                height="100%"
-                frameBorder="0"
-                allowFullScreen
-                className="absolute inset-0 z-10 h-full w-full"
-                title="GTA Respect — Mission Passed"
+              <img
+                src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExcnd0OWF0dzUzbzRkYm1mYWk2ZTEyeGx2cW9tMG9wcnZhbXVqdjVqdyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9dHM/41EMrPA6FbBmKzHDiS/giphy.gif"
+                alt="GTA Respect — Mission Passed"
+                className="h-full w-full object-contain drop-shadow-[0_0_24px_rgba(245,158,11,0.25)]"
               />
             </div>
             <p className="text-center text-sm font-medium uppercase tracking-[0.35em] text-zinc-400 sm:text-base">
