@@ -17,7 +17,6 @@ import { MissionPassedModal } from "@/components/modals";
 import ScrollFloat from "@/components/ScrollFloat";
 import { UseCaseCard } from "@/components/UseCaseCard";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { api } from "@/lib/axios";
 import { showDevelopmentNotice } from "@/lib/toast";
 import { useScanStore } from "@/stores/useScanStore";
 import { useShouldShowHeader } from "@/utils/sidebar";
@@ -80,8 +79,6 @@ function HeroBackground() {
   );
 }
 
-const POLL_INTERVAL_MS = 4000;
-
 export default function HomeClient() {
   const router = useRouter();
   const { isLoaded, isSignedIn } = useAuth();
@@ -91,7 +88,7 @@ export default function HomeClient() {
   const initQrId = useScanStore((s) => s.initQrId);
   const setScanStatus = useScanStore((s) => s.setScanStatus);
   const reset = useScanStore((s) => s.reset);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
   const [cardHovered, setCardHovered] = useState(false);
 
   // Signed in on landing — redirect to dashboard (backup if middleware didn't run)
@@ -104,25 +101,32 @@ export default function HomeClient() {
     if (!showHeader) initQrId();
   }, [showHeader, initQrId]);
 
-  // Poll scan status when we have qrId and not yet scanned
+  // SSE: one long-lived connection until scan (no polling). Only one connection at a time.
   useEffect(() => {
     if (showHeader || !qrId || scanStatus?.scanned) return;
-    const poll = () => {
-      api.get<{ scanned: boolean; scannedAt?: number }>(`/api/scan/status?qrId=${encodeURIComponent(qrId)}`).then((res) => {
-        setScanStatus(res.data);
-        if (res.data.scanned && pollRef.current) {
-          clearInterval(pollRef.current);
-          pollRef.current = null;
-        }
-      }).catch(() => {});
+    // Close any existing connection before opening a new one (e.g. after "Scan again")
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    const url = `/api/scan/status/stream?qrId=${encodeURIComponent(qrId)}`;
+    const es = new EventSource(url);
+    eventSourceRef.current = es;
+    es.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data) as { scanned: boolean; scannedAt?: number };
+        setScanStatus(data);
+        es.close();
+        eventSourceRef.current = null;
+      } catch (_) {}
     };
-    poll();
-    pollRef.current = setInterval(poll, POLL_INTERVAL_MS);
+    es.onerror = () => {
+      es.close();
+      eventSourceRef.current = null;
+    };
     return () => {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
+      es.close();
+      eventSourceRef.current = null;
     };
   }, [showHeader, qrId, scanStatus?.scanned, setScanStatus]);
 
