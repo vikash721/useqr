@@ -92,6 +92,7 @@ export default function Home() {
   const setScanStatus = useScanStore((s) => s.setScanStatus);
   const reset = useScanStore((s) => s.reset);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [cardHovered, setCardHovered] = useState(false);
 
   // Signed in on landing — redirect to dashboard (backup if middleware didn’t run)
   useEffect(() => {
@@ -188,7 +189,13 @@ export default function Home() {
                   </a>
                 </div>
               </div>
-              <div className="relative flex shrink-0 flex-col items-center">
+              <div
+                className="relative flex shrink-0 flex-col items-center"
+                onMouseEnter={() => setCardHovered(true)}
+                onMouseLeave={() => setCardHovered(false)}
+                onTouchStart={() => setCardHovered(true)}
+                onTouchEnd={() => setCardHovered(false)}
+              >
                 <PixelCard
                   variant="default"
                   colors="#94a3b8,#64748b,#475569"
@@ -212,7 +219,7 @@ export default function Home() {
                       </div>
                       <div className="relative z-10 flex flex-1 items-center justify-center p-4">
                         <div className="h-[140px] w-[140px] shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.08)] backdrop-blur-sm lg:h-[160px] lg:w-[160px]">
-                          <DynamicLandingQR qrId={qrId} />
+                          <DynamicLandingQR qrId={qrId} revealed={cardHovered} />
                         </div>
                       </div>
                     </div>
@@ -241,6 +248,33 @@ export default function Home() {
                     </div>
                   </div>
                 </PixelCard>
+
+                {/* Scan hint — below card, gentle pulse, fades on hover */}
+                <p
+                  className="mt-3 text-center text-xs font-medium tracking-wide text-zinc-400 transition-opacity duration-300"
+                  style={{ opacity: cardHovered ? 0 : 1 }}
+                >
+                  <span className="inline-flex items-center gap-1.5 animate-pulse">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-3.5 w-3.5"
+                    >
+                      {/* simple scan / crosshair icon */}
+                      <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+                      <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                      <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+                      <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                      <line x1="7" y1="12" x2="17" y2="12" />
+                    </svg>
+                    Hover to scan
+                  </span>
+                </p>
               </div>
             </div>
             </section>
