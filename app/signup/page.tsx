@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Eye, EyeOff } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useAuth, useSignIn, useSignUp } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { api } from "@/lib/axios";
+import { useUserStore } from "@/stores/useUserStore";
+
+/** Temporary password for create(); user signs in with this (no password step). Use Forgot password to set one later. */
+function generateTempPassword(): string {
+  return `tmp_${typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}_${Date.now()}`;
+}
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -38,12 +46,152 @@ function GoogleIcon({ className }: { className?: string }) {
 }
 
 export default function SignupPage() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const router = useRouter();
+  const { isSignedIn } = useAuth();
+  const { isLoaded: signInLoaded, signIn } = useSignIn();
+  const { isLoaded: signUpLoaded, signUp, setActive } = useSignUp();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [code, setCode] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const isLoaded = signInLoaded && signUpLoaded;
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn) router.replace("/dashboard");
+  }, [isLoaded, isSignedIn, router]);
+
+  // Step 1: Name + Email → send OTP
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setError("Please enter your name.");
+      return;
+    }
+    if (!isLoaded || !signUp) return;
+    const [firstName, ...rest] = trimmedName.split(/\s+/);
+    const lastName = rest.join(" ").trim() || undefined;
+    setLoading(true);
+    try {
+      await signUp.create({
+        emailAddress: email,
+        password: generateTempPassword(),
+        firstName: firstName || undefined,
+        lastName: lastName || undefined,
+      });
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      setVerifying(true);
+    } catch (err: unknown) {
+      setError(
+        err && typeof err === "object" && "errors" in err
+          ? (err as { errors: { message?: string }[] }).errors?.[0]?.message ?? "Something went wrong."
+          : "Something went wrong."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step 2: Verify OTP → setActive, sync user from DB, then redirect to dashboard
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (!isLoaded || !signUp || !setActive) return;
+    setLoading(true);
+    try {
+      const res = await signUp.attemptEmailAddressVerification({ code });
+      if (res.status === "complete" && res.createdSessionId) {
+        await setActive({ session: res.createdSessionId });
+        // Brief wait so session cookie is set, then fetch user from DB for sidebar/dashboard
+        await new Promise((r) => setTimeout(r, 200));
+        try {
+          const syncRes = await api.post<{
+            ok: boolean;
+            user: { clerkId: string; email: string | null; name: string | null; imageUrl: string | null; plan: string; createdAt?: string };
+          }>("/api/users/sync");
+          const data = syncRes.data;
+          if (data?.ok && data.user) {
+            useUserStore.getState().setUser({
+              clerkId: data.user.clerkId,
+              email: data.user.email ?? null,
+              name: data.user.name ?? null,
+              imageUrl: data.user.imageUrl ?? null,
+              plan: data.user.plan,
+              createdAt: data.user.createdAt,
+            });
+          }
+        } catch {
+          // Sync may 401 if cookie not ready; UserSyncOnMount on dashboard will retry
+        }
+        router.push("/dashboard");
+      }
+    } catch (err: unknown) {
+      setError(
+        err && typeof err === "object" && "errors" in err
+          ? (err as { errors: { message?: string }[] }).errors?.[0]?.message ?? "Invalid code."
+          : "Invalid code."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogle = () => {
+    if (!isLoaded || !signIn) return;
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    signIn.authenticateWithRedirect({
+      strategy: "oauth_google",
+      redirectUrl: `${origin}/sso-callback`,
+      redirectUrlComplete: `${origin}/dashboard`,
+    });
+  };
+
+  if (!isLoaded) {
+    return (
+      <div className="flex min-h-svh w-full items-center justify-center bg-black">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-500/30 border-t-emerald-400" />
+      </div>
+    );
+  }
+
+  if (verifying) {
+    return (
+      <div className="flex min-h-svh w-full flex-col items-center justify-center bg-black px-4 py-12">
+        <div className="w-full max-w-[400px] rounded-none border border-white/10 bg-[#1a1a1a] px-8 py-10 shadow-xl">
+          <h1 className="text-center text-2xl font-bold tracking-tight text-white">
+            Verify your email
+          </h1>
+          <p className="mt-2 text-center text-sm text-zinc-400">
+            Enter the code sent to {email}.
+          </p>
+          <form onSubmit={handleVerify} className="mt-6 flex flex-col gap-4">
+            <Input
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="Verification code"
+              className="h-11 rounded-none border-white/10 bg-[#2b2b2b] text-white placeholder:text-zinc-500 focus-visible:ring-emerald-500/50"
+              autoComplete="one-time-code"
+            />
+            {error && <p className="text-sm text-red-400">{error}</p>}
+            <Button
+              type="submit"
+              disabled={loading}
+              className="h-11 w-full rounded-none bg-emerald-500 font-medium text-white hover:bg-emerald-600"
+            >
+              {loading ? "Verifying…" : "Verify"}
+            </Button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-svh w-full flex-col items-center justify-center bg-black px-4 py-12">
-      {/* Main boxy container */}
       <div className="w-full max-w-[400px] rounded-none border border-white/10 bg-[#1a1a1a] px-8 py-10 shadow-xl">
         <h1 className="text-center text-2xl font-bold tracking-tight text-white">
           Sign up
@@ -52,22 +200,20 @@ export default function SignupPage() {
           Get <span className="font-medium text-emerald-400">2 free QR codes</span> when you join—no card required.
         </p>
 
-        {/* Google signup — only social option */}
         <div className="mt-8 flex flex-col gap-3">
           <Button
             type="button"
             variant="outline"
+            onClick={handleGoogle}
             className="h-11 w-full rounded-none border-white/20 bg-[#f3f4f6] text-black hover:bg-[#e5e7eb] dark:border-white/20 dark:bg-[#f3f4f6] dark:text-black dark:hover:bg-[#e5e7eb]"
-            asChild
           >
-            <Link href="#" className="flex items-center justify-center gap-3">
+            <span className="flex items-center justify-center gap-3">
               <GoogleIcon className="size-5 shrink-0" />
-              <span>Continue with Google</span>
-            </Link>
+              Continue with Google
+            </span>
           </Button>
         </div>
 
-        {/* Divider */}
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-white/10" />
@@ -79,86 +225,49 @@ export default function SignupPage() {
           </div>
         </div>
 
-        {/* Email, Password, Confirm Password */}
-        <form className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <Input
+            type="text"
+            placeholder="Full name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="h-11 rounded-none border-white/10 bg-[#2b2b2b] text-white placeholder:text-zinc-500 focus-visible:ring-emerald-500/50"
+            autoComplete="name"
+          />
           <Input
             type="email"
             placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="h-11 rounded-none border-white/10 bg-[#2b2b2b] text-white placeholder:text-zinc-500 focus-visible:ring-emerald-500/50"
           />
-          <div className="relative">
-            <Input
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              className="h-11 rounded-none border-white/10 bg-[#2b2b2b] pr-10 text-white placeholder:text-zinc-500 focus-visible:ring-emerald-500/50"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((p) => !p)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors hover:text-zinc-300"
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? (
-                <EyeOff className="size-4" />
-              ) : (
-                <Eye className="size-4" />
-              )}
-            </button>
-          </div>
-          <div className="relative">
-            <Input
-              type={showConfirmPassword ? "text" : "password"}
-              placeholder="Confirm password"
-              className="h-11 rounded-none border-white/10 bg-[#2b2b2b] pr-10 text-white placeholder:text-zinc-500 focus-visible:ring-emerald-500/50"
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword((p) => !p)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors hover:text-zinc-300"
-              aria-label={
-                showConfirmPassword ? "Hide password" : "Show password"
-              }
-            >
-              {showConfirmPassword ? (
-                <EyeOff className="size-4" />
-              ) : (
-                <Eye className="size-4" />
-              )}
-            </button>
-          </div>
+          {/* Clerk Smart CAPTCHA widget placeholder — required for custom sign-up when bot protection is enabled */}
+          <div id="clerk-captcha" data-cl-theme="dark" />
+          {error && <p className="text-sm text-red-400">{error}</p>}
           <Button
             type="submit"
+            disabled={loading}
             className="h-11 w-full rounded-none bg-emerald-500 font-medium text-white hover:bg-emerald-600"
           >
-            Sign up
+            {loading ? "Sending code…" : "Continue"}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-zinc-400">
           Already have an account?{" "}
-          <Link
-            href="/login"
-            className="font-medium text-white underline-offset-2 hover:underline"
-          >
+          <Link href="/login" className="font-medium text-white underline-offset-2 hover:underline">
             Log in
           </Link>
         </p>
       </div>
 
-      {/* Legal text — outside box, at bottom */}
       <p className="mt-10 max-w-[400px] text-center text-xs text-zinc-500">
         By continuing, you are agreeing to UseQR&apos;s{" "}
-        <Link
-          href="#"
-          className="font-medium text-zinc-400 underline-offset-2 hover:text-zinc-300 hover:underline"
-        >
+        <Link href="#" className="font-medium text-zinc-400 underline-offset-2 hover:text-zinc-300 hover:underline">
           Terms of Service
         </Link>{" "}
         and{" "}
-        <Link
-          href="#"
-          className="font-medium text-zinc-400 underline-offset-2 hover:text-zinc-300 hover:underline"
-        >
+        <Link href="#" className="font-medium text-zinc-400 underline-offset-2 hover:text-zinc-300 hover:underline">
           Privacy Policy
         </Link>
         .

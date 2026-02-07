@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ConditionalSidebarLayout } from "@/components/ConditionalSidebarLayout";
+import { ClerkProvider } from "@/components/providers/ClerkProvider";
 import { Toaster } from "@/components/Toaster";
+import { UserSyncOnMount } from "@/components/UserSyncOnMount";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -112,8 +114,11 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <ConditionalSidebarLayout>{children}</ConditionalSidebarLayout>
-        <Toaster />
+        <ClerkProvider>
+          <UserSyncOnMount />
+          <ConditionalSidebarLayout>{children}</ConditionalSidebarLayout>
+          <Toaster />
+        </ClerkProvider>
       </body>
     </html>
   );

@@ -13,7 +13,9 @@ export const PATHS_WITHOUT_SIDEBAR: string[] = [
   "/pricing",
   "/login",
   "/signup",
+  "/forgot-password",
   "/card",
+  "/sso-callback",
   // "/auth",
 ];
 

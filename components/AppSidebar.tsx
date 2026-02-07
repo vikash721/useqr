@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useClerk } from "@clerk/nextjs";
 import {
   Bot,
   BookOpen,
   ChevronDown,
   ChevronsUpDown,
-  Layers,
+  LogOut,
   Monitor,
   Settings,
 } from "lucide-react";
+import Image from "next/image";
 import {
   Sidebar,
   SidebarContent,
@@ -30,23 +32,46 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useUserStore } from "@/stores/useUserStore";
 
 export function AppSidebar() {
   const [playgroundOpen, setPlaygroundOpen] = useState(true);
+  const user = useUserStore((s) => s.user);
+  const clearUser = useUserStore((s) => s.clearUser);
+  const { signOut } = useClerk();
+
+  const displayName = user?.name?.trim() || "User";
+  const email = user?.email ?? "";
+  const initial = (displayName[0] ?? "U").toUpperCase();
+  const avatarUrl = user?.imageUrl ?? null;
+
+  const handleSignOut = async () => {
+    clearUser();
+    await signOut({ redirectUrl: "/" });
+  };
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border transition-colors duration-300">
-        <div className="flex items-center gap-3 rounded-lg p-2 transition-[padding] duration-300 ease-out group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-blue-600 text-white transition-[border-radius] duration-300 ease-out group-data-[collapsible=icon]:size-8">
-            <Layers className="size-5 transition-[transform] duration-300 group-data-[collapsible=icon]:size-4" />
+        <div className="flex items-center gap-1 rounded-lg p-2 transition-[padding] duration-300 ease-out group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2">
+          <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md p-1.5 transition-[border-radius] duration-300 ease-out group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-1">
+            <Image
+              src="/logo/svg/logo.svg"
+              alt="UseQR"
+              width={36}
+              height={36}
+              className="size-full object-contain transition-transform duration-300"
+            />
           </div>
-          <div className="flex flex-1 flex-col gap-0.5 overflow-hidden transition-opacity duration-300 ease-out group-data-[collapsible=icon]:hidden">
-            <span className="truncate text-sm font-medium text-sidebar-foreground">
-              Acme Inc
-            </span>
-            <span className="truncate text-xs text-muted-foreground">
-              Enterprise
+          <div className="flex flex-1 items-center overflow-hidden transition-opacity duration-300 ease-out group-data-[collapsible=icon]:hidden">
+            <span className="truncate text-xl font-semibold tracking-tight text-sidebar-foreground">
+              Use<span className="text-emerald-500">QR</span>
             </span>
           </div>
           <button
@@ -145,31 +170,47 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-sidebar-border transition-colors duration-300">
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex w-full items-center gap-3 rounded-lg p-2 transition-[padding] duration-300 ease-out group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-sm font-medium text-sidebar-accent-foreground transition-[transform] duration-300 ease-out group-data-[collapsible=icon]:size-8">
-                S
-              </div>
-              <div className="flex flex-1 flex-col gap-0.5 overflow-hidden transition-opacity duration-300 ease-out group-data-[collapsible=icon]:hidden">
-                <span className="truncate text-sm font-medium text-sidebar-foreground">
-                  shadcn
-                </span>
-                <span className="truncate text-xs text-muted-foreground">
-                  m@example.com
-                </span>
-              </div>
-              <button
-                type="button"
-                className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:hidden"
-                aria-label="Account menu"
-              >
-                <ChevronsUpDown className="size-4" />
-              </button>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-3 rounded-lg p-2 transition-[padding] duration-300 ease-out group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2 hover:bg-sidebar-accent"
+                  aria-label="Account menu"
+                >
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt=""
+                      className="size-9 shrink-0 rounded-full object-cover transition-[transform] duration-300 ease-out group-data-[collapsible=icon]:size-8"
+                    />
+                  ) : (
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-sm font-medium text-sidebar-accent-foreground transition-[transform] duration-300 ease-out group-data-[collapsible=icon]:size-8">
+                      {initial}
+                    </div>
+                  )}
+                  <div className="flex flex-1 flex-col gap-0.5 overflow-hidden text-left transition-opacity duration-300 ease-out group-data-[collapsible=icon]:hidden">
+                    <span className="truncate text-sm font-medium text-sidebar-foreground">
+                      {displayName}
+                    </span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      {email || "—"}
+                    </span>
+                  </div>
+                  <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="right" align="end" className="w-56">
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="mr-2 size-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </TooltipTrigger>
           <TooltipContent side="right">
-            <span className="font-medium">shadcn</span>
+            <span className="font-medium">{displayName}</span>
             <span className="block text-xs text-muted-foreground">
-              m@example.com
+              {email || "—"}
             </span>
           </TooltipContent>
         </Tooltip>

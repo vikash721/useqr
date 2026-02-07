@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import { Image, Link2, Package, RefreshCw, UserCircle } from "lucide-react";
 import Link from "next/link";
 import DynamicLandingQR from "@/components/DynamicLandingQR";
@@ -81,6 +83,8 @@ function HeroBackground() {
 const POLL_INTERVAL_MS = 4000;
 
 export default function Home() {
+  const router = useRouter();
+  const { isLoaded, isSignedIn } = useAuth();
   const showHeader = useShouldShowHeader();
   const qrId = useScanStore((s) => s.qrId);
   const scanStatus = useScanStore((s) => s.scanStatus);
@@ -88,6 +92,11 @@ export default function Home() {
   const setScanStatus = useScanStore((s) => s.setScanStatus);
   const reset = useScanStore((s) => s.reset);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Signed in on landing — redirect to dashboard (backup if middleware didn’t run)
+  useEffect(() => {
+    if (isLoaded && isSignedIn) router.replace("/dashboard");
+  }, [isLoaded, isSignedIn, router]);
 
   // Init stable qrId when landing is shown
   useEffect(() => {
