@@ -7,7 +7,7 @@ const isLandingOrAuth = createRouteMatcher(["/", "/login", "/signup", "/forgot-p
 
 /**
  * - Signed in + visiting /, /login, or /signup → redirect to /dashboard
- * - Not signed in + visiting /dashboard → redirect to sign-in (e.g. /login)
+ * - Not signed in + visiting /dashboard → redirect to /login?redirect=/dashboard
  * - Otherwise allow
  *
  * contentSecurityPolicy: {} enables Clerk's default CSP so Smart CAPTCHA
@@ -26,8 +26,10 @@ export default clerkMiddleware(
       return NextResponse.redirect(url);
     }
 
-    if (isDashboard(req)) {
-      await auth.protect();
+    if (isDashboard(req) && !isAuthenticated) {
+      url.pathname = "/login";
+      url.searchParams.set("redirect", "/dashboard");
+      return NextResponse.redirect(url);
     }
 
     return NextResponse.next();

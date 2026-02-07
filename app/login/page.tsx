@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth, useSignIn } from "@clerk/nextjs";
 import type { EmailCodeFactor } from "@clerk/types";
 import { Eye, EyeOff } from "lucide-react";
@@ -42,14 +42,16 @@ function GoogleIcon({ className }: { className?: string }) {
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/dashboard";
   const { isSignedIn } = useAuth();
   const { isLoaded, signIn, setActive } = useSignIn();
   const [email, setEmail] = useState("");
 
   // Already signed in — redirect to dashboard (backup if middleware didn’t run)
   useEffect(() => {
-    if (isLoaded && isSignedIn) router.replace("/dashboard");
-  }, [isLoaded, isSignedIn, router]);
+    if (isLoaded && isSignedIn) router.replace(redirectTo);
+  }, [isLoaded, isSignedIn, router, redirectTo]);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState("");
@@ -66,7 +68,7 @@ export default function LoginPage() {
       const res = await signIn.create({ identifier: email, password });
       if (res.status === "complete") {
         await setActive({ session: res.createdSessionId });
-        router.push("/dashboard");
+        router.push(redirectTo);
         return;
       }
       if (res.status === "needs_second_factor") {
@@ -102,7 +104,7 @@ export default function LoginPage() {
       const res = await signIn.attemptSecondFactor({ strategy: "email_code", code });
       if (res.status === "complete") {
         await setActive({ session: res.createdSessionId });
-        router.push("/dashboard");
+        router.push(redirectTo);
       }
     } catch (err: unknown) {
       setError(
@@ -120,8 +122,8 @@ export default function LoginPage() {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     signIn.authenticateWithRedirect({
       strategy: "oauth_google",
-      redirectUrl: `${origin}/sso-callback`,
-      redirectUrlComplete: `${origin}/dashboard`,
+      redirectUrl: `${origin}/sso-callback?redirect=${encodeURIComponent(redirectTo)}`,
+      redirectUrlComplete: `${origin}${redirectTo.startsWith("/") ? redirectTo : `/${redirectTo}`}`,
     });
   };
 
@@ -171,6 +173,11 @@ export default function LoginPage() {
         <h1 className="text-center text-2xl font-bold tracking-tight text-white">
           Log in
         </h1>
+        {searchParams.get("redirect") && (
+          <p className="mt-2 text-center text-sm text-zinc-400">
+            Please log in to access the dashboard.
+          </p>
+        )}
 
         <div className="mt-8 flex flex-col gap-3">
           <Button
