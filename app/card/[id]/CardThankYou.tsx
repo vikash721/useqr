@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Laptop } from "lucide-react";
 import { api } from "@/lib/axios";
 
@@ -61,8 +62,11 @@ export default function CardThankYou({ qrId }: Props) {
         <p className="mt-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
           You&apos;re in.
         </p>
-        {/* UseQR branding */}
-        <div className="mt-12 flex items-center gap-2 border-t border-white/10 pt-8">
+        {/* UseQR branding — click to go home */}
+        <Link
+          href="/"
+          className="mt-12 flex items-center gap-2 border-t border-white/10 pt-8 transition-opacity hover:opacity-90"
+        >
           <img
             src="/logo/svg/logo.svg"
             alt=""
@@ -71,7 +75,7 @@ export default function CardThankYou({ qrId }: Props) {
           <span className="text-lg font-semibold tracking-tight text-white">
             Use<span className="font-bold text-emerald-400">QR</span>
           </span>
-        </div>
+        </Link>
       </div>
     </div>
   );
