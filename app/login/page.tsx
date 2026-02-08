@@ -59,6 +59,7 @@ function LoginPageContent() {
   const [showEmailCode, setShowEmailCode] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,7 +112,8 @@ function LoginPageContent() {
   };
 
   const handleGoogle = () => {
-    if (!isLoaded || !signIn) return;
+    if (!isLoaded || !signIn || googleLoading) return;
+    setGoogleLoading(true);
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     signIn.authenticateWithRedirect({
       strategy: "oauth_google",
@@ -177,11 +179,16 @@ function LoginPageContent() {
             type="button"
             variant="outline"
             onClick={handleGoogle}
-            className="h-11 w-full rounded-none border-white/20 bg-[#f3f4f6] text-black hover:bg-[#e5e7eb] dark:border-white/20 dark:bg-[#f3f4f6] dark:text-black dark:hover:bg-[#e5e7eb]"
+            disabled={googleLoading}
+            className="h-11 w-full cursor-pointer rounded-none border-white/20 bg-[#f3f4f6] text-black hover:bg-[#e5e7eb] dark:border-white/20 dark:bg-[#f3f4f6] dark:text-black dark:hover:bg-[#e5e7eb] disabled:pointer-events-auto disabled:cursor-wait"
           >
             <span className="flex items-center justify-center gap-3">
-              <GoogleIcon className="size-5 shrink-0" />
-              Google
+              {googleLoading ? (
+                <span className="size-5 shrink-0 animate-spin rounded-full border-2 border-emerald-500/30 border-t-emerald-400" aria-hidden />
+              ) : (
+                <GoogleIcon className="size-5 shrink-0" />
+              )}
+              {googleLoading ? "Redirecting…" : "Google"}
             </span>
           </Button>
         </div>

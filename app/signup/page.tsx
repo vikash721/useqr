@@ -57,6 +57,7 @@ export default function SignupPage() {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const isLoaded = signInLoaded && signUpLoaded;
 
@@ -134,7 +135,8 @@ export default function SignupPage() {
   };
 
   const handleGoogle = () => {
-    if (!isLoaded || !signIn) return;
+    if (!isLoaded || !signIn || googleLoading) return;
+    setGoogleLoading(true);
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     signIn.authenticateWithRedirect({
       strategy: "oauth_google",
@@ -198,11 +200,16 @@ export default function SignupPage() {
             type="button"
             variant="outline"
             onClick={handleGoogle}
-            className="h-11 w-full rounded-none border-white/20 bg-[#f3f4f6] text-black hover:bg-[#e5e7eb] dark:border-white/20 dark:bg-[#f3f4f6] dark:text-black dark:hover:bg-[#e5e7eb]"
+            disabled={googleLoading}
+            className="h-11 w-full cursor-pointer rounded-none border-white/20 bg-[#f3f4f6] text-black hover:bg-[#e5e7eb] dark:border-white/20 dark:bg-[#f3f4f6] dark:text-black dark:hover:bg-[#e5e7eb] disabled:pointer-events-auto disabled:cursor-wait"
           >
             <span className="flex items-center justify-center gap-3">
-              <GoogleIcon className="size-5 shrink-0" />
-              Continue with Google
+              {googleLoading ? (
+                <span className="size-5 shrink-0 animate-spin rounded-full border-2 border-emerald-500/30 border-t-emerald-400" aria-hidden />
+              ) : (
+                <GoogleIcon className="size-5 shrink-0" />
+              )}
+              {googleLoading ? "Redirecting…" : "Continue with Google"}
             </span>
           </Button>
         </div>
