@@ -6,6 +6,7 @@ import { AMThanksModal } from "@/components/modals";
 import { ClerkProvider } from "@/components/providers/ClerkProvider";
 import { Toaster } from "@/components/Toaster";
 import { UserSyncOnMount } from "@/components/UserSyncOnMount";
+import { VisitTelegramNotify } from "@/components/VisitTelegramNotify";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -118,6 +119,7 @@ export default function RootLayout({
         />
         <ClerkProvider>
           <UserSyncOnMount />
+          <VisitTelegramNotify />
           <Suspense fallback={null}>
             <AMThanksModal />
           </Suspense>

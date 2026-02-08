@@ -12,6 +12,10 @@ const serverEnvSchema = z.object({
     .min(1, "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is required"),
   /** Clerk webhook signing secret (whsec_...). Prefer CLERK_WEBHOOK_SIGNING_SECRET over NEXT_PUBLIC_ so the secret isn't exposed to the client. */
   CLERK_WEBHOOK_SIGNING_SECRET: z.string().min(1).optional(),
+  /** Telegram Bot API token. Required only for /api/telegram/send. */
+  TELEGRAM_BOT_TOKEN: z.string().min(1).optional(),
+  /** Telegram chat ID where the bot sends messages. Required only for /api/telegram/send. */
+  TELEGRAM_CHAT_ID: z.string().min(1).optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
