@@ -21,11 +21,16 @@ export async function sendTelegramMessage(
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
   if (!token?.trim() || !chatId?.trim()) {
+    const missing = [!token?.trim() && "TELEGRAM_BOT_TOKEN", !chatId?.trim() && "TELEGRAM_CHAT_ID"]
+      .filter(Boolean)
+      .join(", ");
+    console.error("[telegram] Not configured — missing:", missing);
     return { ok: false, error: "Telegram not configured" };
   }
 
   const trimmed = text.trim().slice(0, TELEGRAM_MAX_TEXT_LENGTH);
   if (!trimmed) {
+    console.error("[telegram] Message empty after trim");
     return { ok: false, error: "Message is empty after trim" };
   }
 
@@ -40,11 +45,13 @@ export async function sendTelegramMessage(
     const data = (await res.json()) as { ok?: boolean; description?: string };
     if (!res.ok || !data.ok) {
       const reason = data.description ?? `HTTP ${res.status}`;
+      console.error("[telegram] API error:", reason, "status:", res.status);
       return { ok: false, error: reason };
     }
     return { ok: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("[telegram] Request failed:", message);
     return { ok: false, error: message };
   }
 }
