@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { Image, Link2, Package, RefreshCw, UserCircle } from "lucide-react";
 import Link from "next/link";
@@ -81,6 +81,7 @@ function HeroBackground() {
 
 export default function HomeClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isLoaded, isSignedIn } = useAuth();
   const showHeader = useShouldShowHeader();
   const qrId = useScanStore((s) => s.qrId);
@@ -130,15 +131,15 @@ export default function HomeClient() {
     };
   }, [showHeader, qrId, scanStatus?.scanned, setScanStatus]);
 
-  // Development notice on landing — show on every refresh/visit (delay so Toaster is mounted)
+  // Development notice on landing — show on every refresh/visit (delay so Toaster is mounted). Skip when view=am.
   useEffect(() => {
-    if (!showHeader) {
+    if (!showHeader && searchParams.get("view") !== "am") {
       const timer = setTimeout(() => {
         showDevelopmentNotice();
       }, 200);
       return () => clearTimeout(timer);
     }
-  }, [showHeader]);
+  }, [showHeader, searchParams]);
 
   const missionPassedOpen = Boolean(scanStatus?.scanned);
 

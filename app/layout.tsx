@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ConditionalSidebarLayout } from "@/components/ConditionalSidebarLayout";
+import { AMThanksModal } from "@/components/modals";
 import { ClerkProvider } from "@/components/providers/ClerkProvider";
 import { Toaster } from "@/components/Toaster";
 import { UserSyncOnMount } from "@/components/UserSyncOnMount";
@@ -116,6 +118,9 @@ export default function RootLayout({
         />
         <ClerkProvider>
           <UserSyncOnMount />
+          <Suspense fallback={null}>
+            <AMThanksModal />
+          </Suspense>
           <ConditionalSidebarLayout>{children}</ConditionalSidebarLayout>
           <Toaster />
         </ClerkProvider>

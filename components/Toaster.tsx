@@ -12,7 +12,7 @@ export function Toaster() {
       toastOptions={{
         classNames: {
           toast:
-            "!rounded-none !border !border-white/10 !bg-zinc-900 !text-white !shadow-lg",
+            "!rounded-none !border !border-white/10 !bg-zinc-900 !text-white !shadow-lg !cursor-grab",
           title: "!text-white",
           description: "!text-zinc-400",
           closeButton:
