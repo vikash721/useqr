@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 const isDashboard = createRouteMatcher(["/dashboard(.*)"]);
 /** Landing page and auth pages — redirect to /dashboard if already signed in */
 const isLandingOrAuth = createRouteMatcher(["/", "/login", "/signup", "/forgot-password"]);
+/** Clerk webhook — must be public (no auth); Clerk sends server-to-server POST */
+const isWebhook = createRouteMatcher(["/api/webhooks/clerk"]);
 
 /**
  * - Signed in + visiting /, /login, or /signup → redirect to /dashboard
@@ -18,6 +20,10 @@ const isLandingOrAuth = createRouteMatcher(["/", "/login", "/signup", "/forgot-p
  */
 export default clerkMiddleware(
   async (auth, req) => {
+    if (isWebhook(req)) {
+      return NextResponse.next();
+    }
+
     const { isAuthenticated } = await auth();
     const url = req.nextUrl.clone();
 

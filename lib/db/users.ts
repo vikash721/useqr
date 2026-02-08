@@ -103,3 +103,24 @@ export async function getUserByClerkId(clerkId: string): Promise<UserDocument | 
   const doc = await coll.findOne({ clerkId });
   return doc as UserDocument | null;
 }
+
+/**
+ * Get all users, newest first. For waitlist/admin list; use only in authenticated APIs.
+ */
+export async function getAllUsers(): Promise<UserDocument[]> {
+  const db = await getDb();
+  const coll = db.collection<UserDocument>(USERS_COLLECTION);
+  const cursor = coll.find({}).sort({ createdAt: -1 });
+  const list = await cursor.toArray();
+  return list as UserDocument[];
+}
+
+/**
+ * Delete user by Clerk id (e.g. from Clerk webhook on user.deleted). Returns true if a document was deleted.
+ */
+export async function deleteUserByClerkId(clerkId: string): Promise<boolean> {
+  const db = await getDb();
+  const coll = db.collection<UserDocument>(USERS_COLLECTION);
+  const result = await coll.deleteOne({ clerkId });
+  return (result.deletedCount ?? 0) > 0;
+}
