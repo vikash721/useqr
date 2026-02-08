@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { verifyWebhook } from "@clerk/nextjs/webhooks";
 import { deleteUserByClerkId } from "@/lib/db/users";
 
@@ -7,7 +7,7 @@ import { deleteUserByClerkId } from "@/lib/db/users";
  * Clerk webhook endpoint. Verify signature, then handle user.deleted (delete user from our DB).
  * Set CLERK_WEBHOOK_SIGNING_SECRET in production (avoid NEXT_PUBLIC_ so the secret isn't exposed to the client).
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const signingSecret =
     process.env.CLERK_WEBHOOK_SIGNING_SECRET ||
     process.env.NEXT_PUBLIC_CLERK_WEBHOOK_SECRET;
