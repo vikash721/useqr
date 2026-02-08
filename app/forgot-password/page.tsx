@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth, useSignIn } from "@clerk/nextjs";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getClerkErrorMessage } from "@/lib/clerk-error";
+
+const RESEND_COOLDOWN_SEC = 60;
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -21,10 +24,20 @@ export default function ForgotPasswordPage() {
   const [codeSent, setCodeSent] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   useEffect(() => {
     if (isLoaded && isSignedIn) router.replace("/dashboard");
   }, [isLoaded, isSignedIn, router]);
+
+  // Cooldown timer for resend
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => setResendCooldown((c) => (c <= 1 ? 0 : c - 1)), 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,15 +51,30 @@ export default function ForgotPasswordPage() {
       });
       setCodeSent(true);
     } catch (err: unknown) {
-      setError(
-        err && typeof err === "object" && "errors" in err
-          ? (err as { errors: { message?: string }[] }).errors?.[0]?.message ?? "Something went wrong."
-          : "Something went wrong."
-      );
+      setError(getClerkErrorMessage(err, "Something went wrong."));
     } finally {
       setLoading(false);
     }
   };
+
+  const handleResendCode = useCallback(async () => {
+    if (!isLoaded || !signIn || !email.trim() || resendCooldown > 0 || resendLoading) return;
+    setError("");
+    setResendSuccess(false);
+    setResendLoading(true);
+    try {
+      await signIn.create({
+        strategy: "reset_password_email_code",
+        identifier: email.trim(),
+      });
+      setResendCooldown(RESEND_COOLDOWN_SEC);
+      setResendSuccess(true);
+    } catch (err: unknown) {
+      setError(getClerkErrorMessage(err, "Could not send a new code. Please try again."));
+    } finally {
+      setResendLoading(false);
+    }
+  }, [isLoaded, signIn, email, resendCooldown, resendLoading]);
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,9 +105,7 @@ export default function ForgotPasswordPage() {
       }
     } catch (err: unknown) {
       setError(
-        err && typeof err === "object" && "errors" in err
-          ? (err as { errors: { message?: string }[] }).errors?.[0]?.message ?? "Invalid code or something went wrong."
-          : "Invalid code or something went wrong."
+        getClerkErrorMessage(err, "The code is incorrect or has expired. Please try again or request a new code.")
       );
     } finally {
       setLoading(false);
@@ -134,6 +160,23 @@ export default function ForgotPasswordPage() {
               className="h-11 rounded-none border-white/10 bg-[#2b2b2b] text-white placeholder:text-zinc-500 focus-visible:ring-emerald-500/50"
               autoComplete="one-time-code"
             />
+            <div className="flex flex-col gap-1">
+              <button
+                type="button"
+                onClick={handleResendCode}
+                disabled={resendLoading || resendCooldown > 0}
+                className="text-sm text-zinc-400 underline-offset-2 hover:text-zinc-300 hover:underline disabled:pointer-events-none disabled:opacity-60"
+              >
+                {resendCooldown > 0
+                  ? `Resend code in ${resendCooldown}s`
+                  : resendLoading
+                    ? "Sending…"
+                    : "Resend code"}
+              </button>
+              {resendSuccess && (
+                <p className="text-sm text-emerald-400">New code sent. Check your email.</p>
+              )}
+            </div>
             <div className="relative">
               <Input
                 type={showPassword ? "text" : "password"}

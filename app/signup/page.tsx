@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth, useSignIn, useSignUp } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getClerkErrorMessage } from "@/lib/clerk-error";
 import { api } from "@/lib/axios";
 import { useUserStore } from "@/stores/useUserStore";
 
@@ -86,11 +87,7 @@ export default function SignupPage() {
       await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
       setVerifying(true);
     } catch (err: unknown) {
-      setError(
-        err && typeof err === "object" && "errors" in err
-          ? (err as { errors: { message?: string }[] }).errors?.[0]?.message ?? "Something went wrong."
-          : "Something went wrong."
-      );
+      setError(getClerkErrorMessage(err, "Something went wrong."));
     } finally {
       setLoading(false);
     }
@@ -130,11 +127,7 @@ export default function SignupPage() {
         router.push("/dashboard");
       }
     } catch (err: unknown) {
-      setError(
-        err && typeof err === "object" && "errors" in err
-          ? (err as { errors: { message?: string }[] }).errors?.[0]?.message ?? "Invalid code."
-          : "Invalid code."
-      );
+      setError(getClerkErrorMessage(err, "Invalid code."));
     } finally {
       setLoading(false);
     }

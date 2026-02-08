@@ -15,9 +15,16 @@ export function UserSyncOnMount() {
   const synced = useRef(false);
 
   useEffect(() => {
-    if (!isSignedIn || synced.current) return;
+    if (!isSignedIn) {
+      synced.current = false;
+      return;
+    }
+    if (synced.current) return;
 
-    const sync = (isRetry = false) => {
+    const delays = [0, 800, 2000];
+    let attempt = 0;
+
+    const runSync = () => {
       api
         .post<{ ok: boolean; user: { clerkId: string; email: string | null; name: string | null; imageUrl: string | null; plan: string; createdAt?: string } }>("/api/users/sync")
         .then((res) => {
@@ -36,15 +43,17 @@ export function UserSyncOnMount() {
         })
         .catch((err) => {
           const is401 = err.response?.status === 401;
-          if (is401 && !isRetry) {
-            setTimeout(() => sync(true), 800);
+          const nextAttempt = attempt + 1;
+          if (is401 && nextAttempt < delays.length) {
+            attempt = nextAttempt;
+            setTimeout(runSync, delays[nextAttempt]);
             return;
           }
           synced.current = true;
         });
     };
 
-    sync();
+    runSync();
   }, [isSignedIn]);
 
   return null;

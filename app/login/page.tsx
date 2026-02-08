@@ -8,6 +8,7 @@ import type { EmailCodeFactor } from "@clerk/types";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getClerkErrorMessage } from "@/lib/clerk-error";
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -85,11 +86,7 @@ function LoginPageContent() {
         return;
       }
     } catch (err: unknown) {
-      setError(
-        err && typeof err === "object" && "errors" in err
-          ? (err as { errors: { message?: string }[] }).errors?.[0]?.message ?? "Something went wrong."
-          : "Something went wrong."
-      );
+      setError(getClerkErrorMessage(err, "Something went wrong."));
     } finally {
       setLoading(false);
     }
@@ -107,11 +104,7 @@ function LoginPageContent() {
         router.push(redirectTo);
       }
     } catch (err: unknown) {
-      setError(
-        err && typeof err === "object" && "errors" in err
-          ? (err as { errors: { message?: string }[] }).errors?.[0]?.message ?? "Invalid code."
-          : "Invalid code."
-      );
+      setError(getClerkErrorMessage(err, "Invalid code."));
     } finally {
       setLoading(false);
     }

@@ -38,6 +38,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useUserStore } from "@/stores/useUserStore";
 
 export function AppSidebar() {
@@ -46,6 +47,7 @@ export function AppSidebar() {
   const clearUser = useUserStore((s) => s.clearUser);
   const { signOut } = useClerk();
 
+  const isLoadingUser = user === null;
   const displayName = user?.name?.trim() || "User";
   const email = user?.email ?? "";
   const initial = (displayName[0] ?? "U").toUpperCase();
@@ -174,10 +176,20 @@ export function AppSidebar() {
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="flex w-full items-center gap-3 rounded-lg p-2 transition-[padding] duration-300 ease-out group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2 hover:bg-sidebar-accent"
-                  aria-label="Account menu"
+                  className="flex w-full items-center gap-3 rounded-lg p-2 transition-[padding] duration-300 ease-out group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2 hover:bg-sidebar-accent disabled:pointer-events-none disabled:opacity-100"
+                  aria-label={isLoadingUser ? "Loading account" : "Account menu"}
+                  disabled={isLoadingUser}
                 >
-                  {avatarUrl ? (
+                  {isLoadingUser ? (
+                    <>
+                      <Skeleton className="size-9 shrink-0 rounded-full bg-sidebar-accent transition-[transform] duration-300 ease-out group-data-[collapsible=icon]:size-8" />
+                      <div className="flex flex-1 flex-col gap-1.5 overflow-hidden text-left transition-opacity duration-300 ease-out group-data-[collapsible=icon]:hidden">
+                        <Skeleton className="h-4 w-24 rounded-md bg-sidebar-accent" />
+                        <Skeleton className="h-3 w-32 rounded-md bg-sidebar-accent" />
+                      </div>
+                      <Skeleton className="size-4 shrink-0 rounded-sm bg-sidebar-accent group-data-[collapsible=icon]:hidden" />
+                    </>
+                  ) : avatarUrl ? (
                     <img
                       src={avatarUrl}
                       alt=""
@@ -188,15 +200,19 @@ export function AppSidebar() {
                       {initial}
                     </div>
                   )}
-                  <div className="flex flex-1 flex-col gap-0.5 overflow-hidden text-left transition-opacity duration-300 ease-out group-data-[collapsible=icon]:hidden">
-                    <span className="truncate text-sm font-medium text-sidebar-foreground">
-                      {displayName}
-                    </span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {email || "—"}
-                    </span>
-                  </div>
-                  <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" />
+                  {!isLoadingUser && (
+                    <>
+                      <div className="flex flex-1 flex-col gap-0.5 overflow-hidden text-left transition-opacity duration-300 ease-out group-data-[collapsible=icon]:hidden">
+                        <span className="truncate text-sm font-medium text-sidebar-foreground">
+                          {displayName}
+                        </span>
+                        <span className="truncate text-xs text-muted-foreground">
+                          {email || "—"}
+                        </span>
+                      </div>
+                      <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" />
+                    </>
+                  )}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="right" align="end" className="w-56">
