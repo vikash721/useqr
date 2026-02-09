@@ -8,6 +8,7 @@ import {
   LogOut,
   PencilRuler,
   QrCode,
+  User,
 } from "lucide-react";
 import Link from "next/link";
 import { useRef } from "react";
@@ -46,6 +47,7 @@ const SIDEBAR_NAV = [
   { label: "My QRs", href: "/dashboard/my-qrs", icon: QrCode },
   { label: "Design QR", href: "/dashboard/designs", icon: PencilRuler },
   { label: "Pricing", href: "/dashboard/pricing", icon: CreditCard },
+  { label: "Profile", href: "/dashboard/profile", icon: User },
 ] as const;
 
 export function AppSidebar() {
@@ -166,6 +168,12 @@ export function AppSidebar() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="right" align="end" className="w-56">
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link href="/dashboard/profile">
+                    <User className="mr-2 size-4" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer" onClick={handleSignOut}>
                   <LogOut className="mr-2 size-4" />
                   Sign out
