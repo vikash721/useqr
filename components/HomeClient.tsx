@@ -12,6 +12,7 @@ import LetterGlitch from "@/components/LetterGlitch";
 import { FAQSection } from "@/components/FAQSection";
 import { HowItWorksSteps } from "@/components/HowItWorksSteps";
 import { LandingFooter } from "@/components/LandingFooter";
+import { PremiumQRSamples } from "@/components/PremiumQRSamples";
 import { LandingHeader } from "@/components/LandingHeader";
 import { MissionPassedModal } from "@/components/modals";
 import ScrollFloat from "@/components/ScrollFloat";
@@ -364,7 +365,7 @@ export default function HomeClient() {
             </section>
 
             {/* Use cases — solid background, no pixel effect */}
-            <section className="relative z-10 w-full overflow-hidden bg-black px-6 py-20 lg:py-28">
+            <section id="use-cases" className="relative z-10 w-full overflow-hidden bg-black px-6 py-20 lg:py-28">
               <ScrollFloat
                 containerClassName="text-center my-0"
                 textClassName="font-bold tracking-tight text-white"
@@ -372,7 +373,7 @@ export default function HomeClient() {
                 One code. Many uses.
               </ScrollFloat>
               <p className="mx-auto mt-6 max-w-xl text-center text-zinc-400">
-                Custom QR codes that fit how you work—store anything, reuse forever, get found.
+                Store anything. Reuse forever. Get found.
               </p>
               <div className="relative mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
                 <UseCaseCard
@@ -471,6 +472,9 @@ export default function HomeClient() {
               </div>
             </section>
 
+            {/* Premium QR samples — FlyingPosters */}
+            <PremiumQRSamples />
+
             {/* Pricing — link to /pricing */}
             <section className="relative z-10 w-full border-t border-white/10 bg-black px-6 py-20 lg:py-24">
               <div className="mx-auto max-w-2xl text-center">
@@ -494,6 +498,7 @@ export default function HomeClient() {
 
             {/* FAQ */}
             <FAQSection
+              id="faq"
               title="Frequently asked questions"
               subtitle="Everything you need to know about UseQR."
               items={[

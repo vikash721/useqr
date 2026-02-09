@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { AppUnderDevelopmentModal } from "@/components/modals/AppUnderDevelopmentModal";
 
 const FOOTER_LINKS = {
   product: [
@@ -12,19 +14,21 @@ const FOOTER_LINKS = {
   ],
   company: [
     { label: "About", href: "/about" },
-    { label: "Blog", href: "#" },
-    { label: "Contact", href: "#" },
+    { label: "Blog", href: "/blog" },
+    { label: "Contact", href: "/contact" },
   ],
   legal: [
-    { label: "Terms of Service", href: "#" },
-    { label: "Privacy Policy", href: "#" },
+    { label: "Terms of Service", href: "/terms" },
+    { label: "Privacy Policy", href: "/privacy" },
   ],
 } as const;
 
 export function LandingFooter() {
   const year = new Date().getFullYear();
+  const [appModalOpen, setAppModalOpen] = useState(false);
 
   return (
+    <>
     <footer className="relative z-10 w-full border-t border-white/10 bg-black">
       <div className="mx-auto max-w-6xl px-6 py-12 sm:py-16">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5 lg:gap-8">
@@ -58,12 +62,22 @@ export function LandingFooter() {
             <ul className="mt-4 space-y-3">
               {FOOTER_LINKS.product.map((item) => (
                 <li key={item.label}>
-                  <Link
-                    href={item.href}
-                    className="text-sm text-zinc-400 transition-colors hover:text-emerald-400"
-                  >
-                    {item.label}
-                  </Link>
+                  {item.label === "Download" ? (
+                    <button
+                      type="button"
+                      onClick={() => setAppModalOpen(true)}
+                      className="text-sm text-zinc-400 transition-colors hover:text-emerald-400"
+                    >
+                      {item.label}
+                    </button>
+                  ) : (
+                    <Link
+                      href={item.href}
+                      className="text-sm text-zinc-400 transition-colors hover:text-emerald-400"
+                    >
+                      {item.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
@@ -115,13 +129,13 @@ export function LandingFooter() {
           </p>
           <div className="flex items-center gap-6">
             <Link
-              href="#"
+              href="/terms"
               className="text-xs text-zinc-500 transition-colors hover:text-zinc-400"
             >
               Terms
             </Link>
             <Link
-              href="#"
+              href="/privacy"
               className="text-xs text-zinc-500 transition-colors hover:text-zinc-400"
             >
               Privacy
@@ -130,5 +144,11 @@ export function LandingFooter() {
         </div>
       </div>
     </footer>
+
+    <AppUnderDevelopmentModal
+      open={appModalOpen}
+      onOpenChange={setAppModalOpen}
+    />
+    </>
   );
 }

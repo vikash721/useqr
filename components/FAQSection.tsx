@@ -13,6 +13,7 @@ export interface FAQSectionProps {
   subtitle?: string;
   items: FAQItem[];
   className?: string;
+  id?: string;
 }
 
 export function FAQSection({
@@ -20,9 +21,11 @@ export function FAQSection({
   subtitle,
   items,
   className,
+  id,
 }: FAQSectionProps) {
   return (
     <section
+      id={id}
       className={cn("relative z-10 w-full bg-black px-6 py-20 lg:py-28", className)}
     >
       <div className="mx-auto max-w-3xl">

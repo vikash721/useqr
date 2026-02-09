@@ -10,12 +10,17 @@ import { usePathname } from "next/navigation";
 export const PATHS_WITHOUT_SIDEBAR: string[] = [
   "/",
   "/about",
+  "/blog",
+  "/contact",
+  "/designs",
   "/pricing",
   "/login",
   "/signup",
   "/forgot-password",
   "/card",
   "/sso-callback",
+  "/terms",
+  "/privacy"
   // "/auth",
 ];
 

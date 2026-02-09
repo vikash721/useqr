@@ -28,21 +28,25 @@ const NAV_LINKS: NavLink[] = [
 
   {
     label: "Designs",
-    href: "#",
+    href: "/designs",
     hasDropdown: true,
     dropdownItems: [
-      { label: "Overview", href: "#" },
-      { label: "Features", href: "#" },
+      { label: "Overview", href: "/designs" },
+      { label: "Premium samples", href: "/designs#samples" },
+      { label: "Colors & logo", href: "/designs#colors" },
+      { label: "Print styles", href: "/designs#print" },
     ],
   },
-  { label: "Blog", href: "#" },
+  { label: "Blog", href: "/blog" },
   {
-    label: "Community",
-    href: "#",
+    label: "Resources",
+    href: "/blog",
     hasDropdown: true,
     dropdownItems: [
-      { label: "Overview", href: "#" },
-      { label: "Features", href: "#" },
+      { label: "Blog", href: "/blog" },
+      { label: "FAQ", href: "/#faq" },
+      { label: "Use cases", href: "/#use-cases" },
+      { label: "Contact", href: "/contact" },
     ],
   },
 ];
@@ -79,7 +83,7 @@ export function LandingHeader() {
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      className="flex items-center gap-0.5 text-sm text-zinc-400 transition-colors hover:text-white focus:outline-none focus:ring-0"
+                      className="flex cursor-pointer items-center gap-0.5 text-sm text-zinc-400 transition-colors hover:text-white focus:outline-none focus:ring-0"
                     >
                       {item.label}
                       <ChevronDown className="size-4 shrink-0" />
@@ -135,7 +139,7 @@ export function LandingHeader() {
           <Button
             size="default"
             type="button"
-            className="rounded-none bg-emerald-500 text-white hover:bg-emerald-600"
+            className="rounded-none cursor-pointer bg-emerald-500 text-white hover:bg-emerald-600"
             onClick={() => setAppModalOpen(true)}
           >
             Get App
