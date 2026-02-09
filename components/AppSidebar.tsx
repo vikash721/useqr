@@ -2,6 +2,7 @@
 
 import { useClerk } from "@clerk/nextjs";
 import {
+  BarChart3,
   ChevronsUpDown,
   CreditCard,
   LayoutDashboard,
@@ -45,6 +46,7 @@ import { useUserStore } from "@/stores/useUserStore";
 const SIDEBAR_NAV = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "My QRs", href: "/dashboard/my-qrs", icon: QrCode },
+  { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
   { label: "Design QR", href: "/dashboard/designs", icon: PencilRuler },
   { label: "Pricing", href: "/dashboard/pricing", icon: CreditCard },
   { label: "Profile", href: "/dashboard/profile", icon: User },
