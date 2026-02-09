@@ -44,6 +44,7 @@ const NAV_LINKS: NavLink[] = [
     hasDropdown: true,
     dropdownItems: [
       { label: "Blog", href: "/blog" },
+      { label: "Pitch deck", href: "https://drive.google.com/file/d/1dNM5s7myTe2Y715Q4npllmTfxItJ3zFv/view?usp=drive_link" },
       { label: "FAQ", href: "/#faq" },
       { label: "Use cases", href: "/#use-cases" },
       { label: "Contact", href: "/contact" },
@@ -93,16 +94,23 @@ export function LandingHeader() {
                     align="start"
                     className="min-w-40 rounded-none border-white/10 bg-zinc-900"
                   >
-                    {item.dropdownItems?.map((sub) => (
-                      <DropdownMenuItem asChild key={sub.label}>
-                        <Link
-                          href={sub.href}
-                          className="cursor-pointer text-zinc-300 focus:bg-white/5 focus:text-white"
-                        >
-                          {sub.label}
-                        </Link>
-                      </DropdownMenuItem>
-                    ))}
+                    {item.dropdownItems?.map((sub) => {
+                      const isExternal = sub.href.startsWith("http");
+                      return (
+                        <DropdownMenuItem asChild key={sub.label}>
+                          <Link
+                            href={sub.href}
+                            className="cursor-pointer text-zinc-300 focus:bg-white/5 focus:text-white"
+                            {...(isExternal && {
+                              target: "_blank",
+                              rel: "noopener noreferrer",
+                            })}
+                          >
+                            {sub.label}
+                          </Link>
+                        </DropdownMenuItem>
+                      );
+                    })}
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
