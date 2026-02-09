@@ -96,6 +96,11 @@ export default function HomeClient() {
   const sseRetryCountRef = useRef(0);
   const [cardHovered, setCardHovered] = useState(false);
   const [sseReconnectKey, setSseReconnectKey] = useState(0);
+  const [scanWaitingPaused, setScanWaitingPaused] = useState(false);
+
+  /** Stop SSE + polling after this long; user can tap overlay to resume listening. */
+  const SCAN_WAIT_MAX_MS = 7 * 60 * 1000;
+  // const SCAN_WAIT_MAX_MS = 10 * 1000;
 
   // Signed in on landing — redirect to dashboard (backup if middleware didn't run)
   useEffect(() => {
@@ -108,13 +113,19 @@ export default function HomeClient() {
   }, [showHeader, initQrId]);
 
   // ---------------------------------------------------------------------------
-  // Polling safety-net: always runs alongside SSE. SSE gives instant delivery;
-  // polling catches silently-dead SSE (proxy timeout, background throttle, etc.)
-  // One lightweight GET every 5 s is trivially cheap.
-  // Also polls immediately on tab-refocus and network-recovery.
+  // Pause SSE + polling after 7 min to avoid infinite requests; user taps QR to resume.
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (showHeader || !qrId || scanStatus?.scanned) return;
+    if (showHeader || !qrId || scanStatus?.scanned || scanWaitingPaused) return;
+    const t = setTimeout(() => setScanWaitingPaused(true), SCAN_WAIT_MAX_MS);
+    return () => clearTimeout(t);
+  }, [showHeader, qrId, scanStatus?.scanned, scanWaitingPaused, SCAN_WAIT_MAX_MS]);
+
+  // ---------------------------------------------------------------------------
+  // Polling safety-net: always runs alongside SSE (unless paused after 7 min).
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (showHeader || !qrId || scanStatus?.scanned || scanWaitingPaused) return;
 
     const poll = async () => {
       try {
@@ -149,14 +160,13 @@ export default function HomeClient() {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("online", onOnline);
     };
-  }, [showHeader, qrId, scanStatus?.scanned, setScanStatus]);
+  }, [showHeader, qrId, scanStatus?.scanned, setScanStatus, scanWaitingPaused]);
 
   // ---------------------------------------------------------------------------
-  // SSE: fast path — instant delivery via server push. Reconnects on error with
-  // exponential back-off capped at 5 retries, then gives up (polling still runs).
+  // SSE: fast path — instant delivery via server push (unless paused after 7 min).
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (showHeader || !qrId || scanStatus?.scanned) return;
+    if (showHeader || !qrId || scanStatus?.scanned || scanWaitingPaused) return;
     if (sseRetryCountRef.current > 5) return;
     // Close any existing connection before opening a new one (e.g. after "Scan again")
     if (eventSourceRef.current) {
@@ -194,7 +204,7 @@ export default function HomeClient() {
         sseReconnectTimeoutRef.current = null;
       }
     };
-  }, [showHeader, qrId, scanStatus?.scanned, setScanStatus, sseReconnectKey]);
+  }, [showHeader, qrId, scanStatus?.scanned, setScanStatus, sseReconnectKey, scanWaitingPaused]);
 
   // Development notice on landing — show on every refresh/visit (delay so Toaster is mounted). Skip when view=am.
   useEffect(() => {
@@ -218,6 +228,7 @@ export default function HomeClient() {
             initQrId();
             setSseReconnectKey(0);
             sseRetryCountRef.current = 0;
+            setScanWaitingPaused(false);
           }
         }}
       />
@@ -268,13 +279,33 @@ export default function HomeClient() {
                 onTouchStart={() => setCardHovered(true)}
                 onTouchEnd={() => setCardHovered(false)}
               >
-                <PixelCard
-                  variant="default"
-                  colors="#94a3b8,#64748b,#475569"
-                  gap={6}
-                  speed={30}
-                  className="h-[340px] w-[280px] rounded-none border-white/10 bg-zinc-900/95 shadow-2xl shadow-black/30 lg:h-[380px] lg:w-[300px]"
-                >
+                <div className="relative">
+                  {scanWaitingPaused && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setScanWaitingPaused(false);
+                        setSseReconnectKey(0);
+                        sseRetryCountRef.current = 0;
+                      }}
+                      className="absolute inset-0 cursor-pointer z-20 flex flex-col items-center justify-center gap-2 rounded-none bg-zinc-900/95 backdrop-blur-sm transition-opacity hover:opacity-95"
+                      aria-label="Resume waiting for scan"
+                    >
+                      <span className="text-sm font-medium uppercase tracking-wider text-zinc-400">
+                        Paused
+                      </span>
+                      <span className="text-xs text-zinc-500">
+                        Tap to scan now
+                      </span>
+                    </button>
+                  )}
+                  <PixelCard
+                    variant="default"
+                    colors="#94a3b8,#64748b,#475569"
+                    gap={6}
+                    speed={30}
+                    className="h-[340px] w-[280px] rounded-none border-white/10 bg-zinc-900/95 shadow-2xl shadow-black/30 lg:h-[380px] lg:w-[300px]"
+                  >
                   {/* Visiting card: QR on top (no inner padding), info at bottom */}
                   <div className="absolute inset-0 flex flex-col p-0">
                     {/* QR — LetterGlitch bg, QR on top */}
@@ -320,32 +351,13 @@ export default function HomeClient() {
                     </div>
                   </div>
                 </PixelCard>
+                </div>
 
                 {/* Scan hint — below card, gentle pulse, fades on hover */}
                 <p
                   className="mt-3 text-center text-xs font-medium tracking-wide text-zinc-400 transition-opacity duration-300"
                   style={{ opacity: cardHovered ? 0 : 1 }}
                 >
-                  <span className="inline-flex items-center gap-1.5 animate-pulse">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-3.5 w-3.5"
-                    >
-                      {/* simple scan / crosshair icon */}
-                      <path d="M3 7V5a2 2 0 0 1 2-2h2" />
-                      <path d="M17 3h2a2 2 0 0 1 2 2v2" />
-                      <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
-                      <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-                      <line x1="7" y1="12" x2="17" y2="12" />
-                    </svg>
-                    Hover to scan
-                  </span>
                 </p>
               </div>
             </div>
