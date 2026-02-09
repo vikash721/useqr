@@ -18,15 +18,7 @@ export default function AnalyticsPage() {
 
       <div className="flex flex-1 flex-col overflow-y-auto">
         <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-            <Info className="mt-0.5 size-4 shrink-0 text-amber-500" />
-            <p className="text-sm text-amber-200/90">
-              <span className="font-medium text-amber-400">Heads up!</span>{" "}
-              The data shown here is for demonstration purposes only and does not
-              reflect your actual analytics. We&apos;re actively working on
-              bringing real-time data to this page.
-            </p>
-          </div>
+
 
           <div className="mb-8">
             <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
@@ -34,6 +26,15 @@ export default function AnalyticsPage() {
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Choose a QR code to view its scan analytics and usage.
+            </p>
+          </div>
+          <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+            <Info className="mt-0.5 size-4 shrink-0 text-amber-500" />
+            <p className="text-sm text-amber-200/90">
+              <span className="font-medium text-amber-400">Heads up!</span>{" "}
+              The data shown here is for demonstration purposes only and does not
+              reflect your actual analytics. We&apos;re actively working on
+              bringing real-time data to this page.
             </p>
           </div>
 

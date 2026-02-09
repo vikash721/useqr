@@ -7,6 +7,7 @@ import {
   CreditCard,
   LayoutDashboard,
   LogOut,
+  Package,
   PencilRuler,
   QrCode,
   User,
@@ -48,6 +49,7 @@ const SIDEBAR_NAV = [
   { label: "My QRs", href: "/dashboard/my-qrs", icon: QrCode },
   { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
   { label: "Design QR", href: "/dashboard/designs", icon: PencilRuler },
+  { label: "My Orders", href: "/dashboard/my-orders", icon: Package },
   { label: "Pricing", href: "/dashboard/pricing", icon: CreditCard },
   { label: "Profile", href: "/dashboard/profile", icon: User },
 ] as const;

@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BarChart3,
-  CheckCircle2,
+  Loader2,
   QrCode,
   Sparkles,
   Users,
 } from "lucide-react";
+import { AnimatedCheckCircle } from "./AnimatedCheckCircle";
 import { usersApi, type WaitlistUser } from "@/lib/api";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -65,20 +66,44 @@ export function WaitlistScreen() {
   const [users, setUsers] = useState<WaitlistUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const refetchDone = useRef(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     usersApi
       .getAll()
-      .then((users) => {
-        setUsers(users ?? []);
+      .then((list) => {
+        if (cancelled) return;
+        setUsers(Array.isArray(list) ? list : []);
         setError(null);
       })
       .catch((err) => {
+        if (cancelled) return;
         setUsers([]);
-        setError(err.response?.data?.error ?? "Failed to load waitlist.");
+        setError(err?.response?.data?.error ?? "Failed to load waitlist.");
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  // Refetch once after a short delay so new signups (synced by UserSyncOnMount) appear in the list
+  useEffect(() => {
+    if (!loading && !refetchDone.current) {
+      refetchDone.current = true;
+      const t = setTimeout(() => {
+        usersApi.getAll().then((list) => {
+          setUsers(Array.isArray(list) ? list : []);
+        }).catch(() => {});
+      }, 1500);
+      return () => clearTimeout(t);
+    }
+  }, [loading]);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -86,13 +111,19 @@ export function WaitlistScreen() {
         {/* Hero */}
         <div className="flex flex-col items-center text-center">
           <div className="mb-4 flex size-14 items-center justify-center rounded-lg border border-border bg-card">
-            <CheckCircle2 className="size-7 text-emerald-500" aria-hidden />
+            {loading ? (
+              <Loader2 className="size-7 animate-spin text-muted-foreground" aria-hidden />
+            ) : (
+              <AnimatedCheckCircle />
+            )}
           </div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-            You&apos;re on the waitlist
+            {loading ? "Checking your status…" : "You're on the waitlist"}
           </h1>
           <p className="mt-2 max-w-md text-sm text-muted-foreground sm:text-base">
-            We&apos;re building the full dashboard. You&apos;ll be first to know when it&apos;s ready.
+            {loading
+              ? "Fetching your waitlist details."
+              : "We're building the full dashboard. You'll be first to know when it's ready."}
           </p>
         </div>
 
@@ -104,18 +135,32 @@ export function WaitlistScreen() {
           )}
         >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-sm font-medium text-foreground">
-                Early access
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Your account is in. We&apos;ll email you when the full experience is live—no action needed.
-              </p>
+            <div className="min-w-0 flex-1">
+              {loading ? (
+                <>
+                  <Skeleton className="h-4 w-24 rounded-md" />
+                  <Skeleton className="mt-2 h-4 w-full max-w-sm rounded-md" />
+                  <Skeleton className="mt-1.5 h-4 w-3/4 max-w-xs rounded-md" />
+                </>
+              ) : (
+                <>
+                  <h2 className="text-sm font-medium text-foreground">
+                    Early access
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Your account is in. We&apos;ll email you when the full experience is live—no action needed.
+                  </p>
+                </>
+              )}
             </div>
             <div className="shrink-0">
-              <span className="inline-flex items-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-400">
-                Confirmed
-              </span>
+              {loading ? (
+                <Skeleton className="h-8 w-24 rounded-md" />
+              ) : (
+                <span className="inline-flex items-center rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-400">
+                  Confirmed
+                </span>
+              )}
             </div>
           </div>
         </div>
