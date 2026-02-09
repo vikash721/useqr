@@ -90,7 +90,12 @@ export default function HomeClient() {
   const setScanStatus = useScanStore((s) => s.setScanStatus);
   const reset = useScanStore((s) => s.reset);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const sseReconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const sseRetryCountRef = useRef(0);
   const [cardHovered, setCardHovered] = useState(false);
+  const [sseReconnectKey, setSseReconnectKey] = useState(0);
 
   // Signed in on landing — redirect to dashboard (backup if middleware didn't run)
   useEffect(() => {
@@ -102,9 +107,57 @@ export default function HomeClient() {
     if (!showHeader) initQrId();
   }, [showHeader, initQrId]);
 
-  // SSE: one long-lived connection until scan (no polling). Only one connection at a time.
+  // ---------------------------------------------------------------------------
+  // Polling safety-net: always runs alongside SSE. SSE gives instant delivery;
+  // polling catches silently-dead SSE (proxy timeout, background throttle, etc.)
+  // One lightweight GET every 5 s is trivially cheap.
+  // Also polls immediately on tab-refocus and network-recovery.
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (showHeader || !qrId || scanStatus?.scanned) return;
+
+    const poll = async () => {
+      try {
+        const res = await fetch(
+          `/api/scan/status?qrId=${encodeURIComponent(qrId)}`
+        );
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          scanned: boolean;
+          scannedAt?: number;
+        };
+        if (data.scanned) setScanStatus(data);
+      } catch (_) {}
+    };
+
+    // Immediate first check (page load / reset)
+    poll();
+    const interval = setInterval(poll, 5000);
+
+    // Poll immediately when tab becomes visible again
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") poll();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    // Poll immediately when network comes back online
+    const onOnline = () => poll();
+    window.addEventListener("online", onOnline);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("online", onOnline);
+    };
+  }, [showHeader, qrId, scanStatus?.scanned, setScanStatus]);
+
+  // ---------------------------------------------------------------------------
+  // SSE: fast path — instant delivery via server push. Reconnects on error with
+  // exponential back-off capped at 5 retries, then gives up (polling still runs).
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (showHeader || !qrId || scanStatus?.scanned) return;
+    if (sseRetryCountRef.current > 5) return;
     // Close any existing connection before opening a new one (e.g. after "Scan again")
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
@@ -124,12 +177,24 @@ export default function HomeClient() {
     es.onerror = () => {
       es.close();
       eventSourceRef.current = null;
+      sseRetryCountRef.current += 1;
+      if (sseRetryCountRef.current <= 5) {
+        const delay = Math.min(1500 * 2 ** (sseRetryCountRef.current - 1), 12000);
+        sseReconnectTimeoutRef.current = setTimeout(
+          () => setSseReconnectKey((k) => k + 1),
+          delay
+        );
+      }
     };
     return () => {
       es.close();
       eventSourceRef.current = null;
+      if (sseReconnectTimeoutRef.current) {
+        clearTimeout(sseReconnectTimeoutRef.current);
+        sseReconnectTimeoutRef.current = null;
+      }
     };
-  }, [showHeader, qrId, scanStatus?.scanned, setScanStatus]);
+  }, [showHeader, qrId, scanStatus?.scanned, setScanStatus, sseReconnectKey]);
 
   // Development notice on landing — show on every refresh/visit (delay so Toaster is mounted). Skip when view=am.
   useEffect(() => {
@@ -151,6 +216,8 @@ export default function HomeClient() {
           if (!open) {
             reset();
             initQrId();
+            setSseReconnectKey(0);
+            sseRetryCountRef.current = 0;
           }
         }}
       />

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { getVisitTelegramMessage } from "@/lib/visit-telegram-message";
 
 const SESSION_STORAGE_KEY = "useqr-visit-telegram-sent";
-const ENABLED_HOSTS = ["useqr.codes", "localhost", "127.0.0.1", "www.useqr.codes"];
+const ENABLED_HOSTS = ["useqr.codes", "www.useqr.codes"];
 
 /**
  * On production (useqr.codes) or localhost, sends a one-time Telegram message per session
