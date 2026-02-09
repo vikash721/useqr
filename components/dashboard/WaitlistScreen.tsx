@@ -25,15 +25,6 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
-/** Mask email for display: first char + *** + @domain (e.g. a***@example.com). */
-function maskEmail(email: string): string {
-  const at = email.indexOf("@");
-  if (at <= 0) return "***";
-  const local = email.slice(0, at);
-  const domain = email.slice(at);
-  if (local.length === 0) return "***" + domain;
-  return local[0] + "***" + domain;
-}
 
 function formatJoined(iso: string): string {
   try {
@@ -296,7 +287,7 @@ export function WaitlistScreen() {
                           {row.name ?? "—"}
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">
-                          {row.email ? maskEmail(row.email) : "—"}
+                          {row.email ?? "—"}
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">
                           {formatJoined(row.createdAt)}
