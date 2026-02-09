@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
 import { useClerk } from "@clerk/nextjs";
 import {
-  Bot,
-  BookOpen,
-  ChevronDown,
   ChevronsUpDown,
+  CreditCard,
+  LayoutDashboard,
   LogOut,
-  Monitor,
-  Settings,
+  PencilRuler,
+  QrCode,
 } from "lucide-react";
-import Image from "next/image";
+import Link from "next/link";
+import { useRef } from "react";
+import { AnimatedLogo, type AnimatedLogoHandle } from "@/components/AnimatedLogo";
 import {
   Sidebar,
   SidebarContent,
@@ -22,11 +22,11 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import {
+  AnimatedSidebarIcon,
+  SidebarNavItem,
+} from "@/components/AnimatedSidebarIcon";
 import {
   Tooltip,
   TooltipContent,
@@ -41,8 +41,15 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUserStore } from "@/stores/useUserStore";
 
+const SIDEBAR_NAV = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "My QRs", href: "/dashboard/my-qrs", icon: QrCode },
+  { label: "Design QR", href: "/dashboard/designs", icon: PencilRuler },
+  { label: "Pricing", href: "/dashboard/pricing", icon: CreditCard },
+] as const;
+
 export function AppSidebar() {
-  const [playgroundOpen, setPlaygroundOpen] = useState(true);
+  const logoRef = useRef<AnimatedLogoHandle>(null);
   const user = useUserStore((s) => s.user);
   const clearUser = useUserStore((s) => s.clearUser);
   const { signOut } = useClerk();
@@ -62,108 +69,51 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border transition-colors duration-300">
         <div className="flex items-center gap-1 rounded-lg p-2 transition-[padding] duration-300 ease-out group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2">
-          <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md p-1.5 transition-[border-radius] duration-300 ease-out group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-1">
-            <Image
-              src="/logo/svg/logo.svg"
-              alt="UseQR"
-              width={36}
-              height={36}
-              className="size-full object-contain transition-transform duration-300"
-            />
-          </div>
-          <div className="flex flex-1 items-center overflow-hidden transition-opacity duration-300 ease-out group-data-[collapsible=icon]:hidden">
+          <Link
+            href="/dashboard"
+            className="cursor-pointer flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md p-1.5 transition-[border-radius] duration-300 ease-out group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-1 hover:opacity-90"
+            aria-label="UseQR home"
+          >
+            <AnimatedLogo ref={logoRef} />
+          </Link>
+          <Link
+            href="/dashboard"
+            className="flex flex-1 items-center overflow-hidden transition-opacity duration-300 ease-out group-data-[collapsible=icon]:hidden"
+            onMouseEnter={() => logoRef.current?.replay()}
+          >
             <span className="truncate text-xl font-semibold tracking-tight text-sidebar-foreground">
               Use<span className="text-emerald-500">QR</span>
             </span>
-          </div>
-          <button
-            type="button"
-            className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:hidden"
-            aria-label="Switch organization"
-          >
-            <ChevronsUpDown className="size-4" />
-          </button>
+          </Link>
+          <span className="size-8 shrink-0 group-data-[collapsible=icon]:hidden" aria-hidden />
         </div>
       </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="transition-opacity duration-300 group-data-[collapsible=icon]:opacity-0">
-            Platform
+            App
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => setPlaygroundOpen((o) => !o)}
-                  className="flex items-center justify-between transition-colors duration-200"
-                  tooltip="Playground"
-                >
-                  <span className="flex items-center gap-2">
-                    <Monitor className="size-4 shrink-0" />
-                    Playground
-                  </span>
-                  <ChevronDown
-                    className="size-4 shrink-0 transition-transform duration-200 ease-out"
-                    style={{
-                      transform: playgroundOpen
-                        ? "rotate(0deg)"
-                        : "rotate(-90deg)",
-                    }}
-                  />
-                </SidebarMenuButton>
-                <div
-                  className="grid transition-[grid-template-rows] duration-200 ease-out"
-                  style={{
-                    gridTemplateRows: playgroundOpen ? "1fr" : "0fr",
-                  }}
-                >
-                  <div className="min-h-0 overflow-hidden">
-                    <SidebarMenuSub className="opacity-100 transition-opacity duration-200 ease-out">
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton href="#">
-                          History
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton href="#">Starred</SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton href="#">
-                          Settings
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    </SidebarMenuSub>
-                  </div>
-                </div>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Models">
-                  <a href="#">
-                    <Bot className="size-4" />
-                    Models
-                    <ChevronDown className="ml-auto size-4 -rotate-90" />
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Documentation">
-                  <a href="#">
-                    <BookOpen className="size-4" />
-                    Documentation
-                    <ChevronDown className="ml-auto size-4 -rotate-90" />
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Settings">
-                  <a href="#">
-                    <Settings className="size-4" />
-                    Settings
-                    <ChevronDown className="ml-auto size-4 -rotate-90" />
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {SIDEBAR_NAV.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <SidebarNavItem key={item.label}>
+                    {({ isHovered }) => (
+                      <SidebarMenuButton asChild tooltip={item.label}>
+                        <Link href={item.href}>
+                          <AnimatedSidebarIcon
+                            icon={Icon}
+                            isHovered={isHovered}
+                          />
+                          {item.label}
+                        </Link>
+                      </SidebarMenuButton>
+                    )}
+                  </SidebarNavItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -202,7 +152,7 @@ export function AppSidebar() {
                   )}
                   {!isLoadingUser && (
                     <>
-                      <div className="flex flex-1 flex-col gap-0.5 overflow-hidden text-left transition-opacity duration-300 ease-out group-data-[collapsible=icon]:hidden">
+                      <div className="cursor-pointer flex flex-1 flex-col gap-0.5 overflow-hidden text-left transition-opacity duration-300 ease-out group-data-[collapsible=icon]:hidden">
                         <span className="truncate text-sm font-medium text-sidebar-foreground">
                           {displayName}
                         </span>
@@ -210,13 +160,13 @@ export function AppSidebar() {
                           {email || "—"}
                         </span>
                       </div>
-                      <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" />
+                      <ChevronsUpDown className="cursor-pointer size-4 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" />
                     </>
                   )}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="right" align="end" className="w-56">
-                <DropdownMenuItem onClick={handleSignOut}>
+                <DropdownMenuItem className="cursor-pointer" onClick={handleSignOut}>
                   <LogOut className="mr-2 size-4" />
                   Sign out
                 </DropdownMenuItem>

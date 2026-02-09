@@ -122,6 +122,16 @@
   body {
     @apply bg-background text-foreground;
   }
+  button,
+  [role="button"],
+  a,
+  input[type="submit"],
+  input[type="button"],
+  input[type="reset"],
+  select,
+  summary {
+    cursor: pointer;
+  }
   /* Premium selection: white highlight, black text */
   ::selection {
     background-color: white;

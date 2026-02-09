@@ -31,10 +31,10 @@ export function PlanThankYouModal({
             <Heart className="size-7 text-emerald-400" />
           </div>
           <DialogHeader className="gap-2">
-            <DialogTitle className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+            <DialogTitle className="text-xl text-center font-semibold tracking-tight text-white sm:text-2xl">
               Thank you so much for your interest
             </DialogTitle>
-            <DialogDescription className="text-base leading-relaxed text-zinc-400">
+            <DialogDescription className="text-base text-center leading-relaxed text-zinc-400">
               It really means a lot to us that you want to be part of UseQR. Our
               payments aren&apos;t live yet—we&apos;re working on it. In the
               meantime, reach out to us directly and we&apos;ll get you set up
@@ -54,7 +54,7 @@ export function PlanThankYouModal({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="inline-flex h-11 w-full items-center justify-center rounded-none bg-emerald-500 px-8 text-sm font-medium text-white transition-colors hover:bg-emerald-600 sm:w-auto"
+              className="cursor-pointer inline-flex h-11 w-full items-center justify-center rounded-none bg-emerald-500 px-8 text-sm font-medium text-white transition-colors hover:bg-emerald-600 sm:w-auto"
             >
               Got it
             </button>
