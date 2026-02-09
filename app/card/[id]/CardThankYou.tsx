@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Laptop } from "lucide-react";
-import { api } from "@/lib/axios";
+import { scanApi } from "@/lib/api";
 
 type Props = { qrId: string };
 
@@ -12,8 +12,8 @@ export default function CardThankYou({ qrId }: Props) {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    api
-      .post("/api/scan", { qrId })
+    scanApi
+      .record(qrId)
       .then(() => setDone(true))
       .catch(() => setError(true));
   }, [qrId]);

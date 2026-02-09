@@ -7,7 +7,7 @@ import { useAuth, useSignIn, useSignUp } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getClerkErrorMessage } from "@/lib/clerk-error";
-import { api } from "@/lib/axios";
+import { usersApi } from "@/lib/api";
 import { useUserStore } from "@/stores/useUserStore";
 
 /** Temporary password for create(); user signs in with this (no password step). Use Forgot password to set one later. */
@@ -107,11 +107,7 @@ export default function SignupPage() {
         // Brief wait so session cookie is set, then fetch user from DB for sidebar/dashboard
         await new Promise((r) => setTimeout(r, 200));
         try {
-          const syncRes = await api.post<{
-            ok: boolean;
-            user: { clerkId: string; email: string | null; name: string | null; imageUrl: string | null; plan: string; createdAt?: string };
-          }>("/api/users/sync");
-          const data = syncRes.data;
+          const data = await usersApi.sync();
           if (data?.ok && data.user) {
             useUserStore.getState().setUser({
               clerkId: data.user.clerkId,

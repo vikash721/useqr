@@ -8,18 +8,12 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
-import { api } from "@/lib/axios";
+import { usersApi, type WaitlistUser } from "@/lib/api";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-type WaitlistUser = {
-  id: string;
-  name: string | null;
-  email: string | null;
-  imageUrl: string | null;
-  createdAt: string;
-};
+// WaitlistUser type imported from @/lib/api
 
 function getInitials(name: string): string {
   return name
@@ -73,10 +67,10 @@ export function WaitlistScreen() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api
-      .get<{ users: WaitlistUser[] }>("/api/users")
-      .then((res) => {
-        setUsers(res.data?.users ?? []);
+    usersApi
+      .getAll()
+      .then((users) => {
+        setUsers(users ?? []);
         setError(null);
       })
       .catch((err) => {

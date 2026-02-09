@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { getVisitTelegramMessage } from "@/lib/visit-telegram-message";
+import { telegramApi } from "@/lib/api";
 
 const SESSION_STORAGE_KEY = "useqr-visit-telegram-sent";
 const ENABLED_HOSTS = ["useqr.codes", "www.useqr.codes"];
@@ -24,11 +25,7 @@ export function VisitTelegramNotify() {
     const message = getVisitTelegramMessage();
     if (!message) return;
 
-    fetch("/api/telegram/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message }),
-    }).catch(() => {
+    telegramApi.send(message).catch(() => {
       // Fire-and-forget; don't surface errors to the user
     });
   }, []);

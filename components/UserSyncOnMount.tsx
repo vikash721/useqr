@@ -2,7 +2,7 @@
 
 import { useAuth } from "@clerk/nextjs";
 import { useEffect, useRef } from "react";
-import { api } from "@/lib/axios";
+import { usersApi } from "@/lib/api";
 import { useUserStore } from "@/stores/useUserStore";
 
 /**
@@ -25,10 +25,9 @@ export function UserSyncOnMount() {
     let attempt = 0;
 
     const runSync = () => {
-      api
-        .post<{ ok: boolean; user: { clerkId: string; email: string | null; name: string | null; imageUrl: string | null; plan: string; createdAt?: string } }>("/api/users/sync")
-        .then((res) => {
-          const data = res.data;
+      usersApi
+        .sync()
+        .then((data) => {
           if (data?.ok && data.user) {
             useUserStore.getState().setUser({
               clerkId: data.user.clerkId,

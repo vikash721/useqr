@@ -18,6 +18,7 @@ import { MissionPassedModal } from "@/components/modals";
 import ScrollFloat from "@/components/ScrollFloat";
 import { UseCaseCard } from "@/components/UseCaseCard";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { scanApi } from "@/lib/api";
 import { showDevelopmentNotice } from "@/lib/toast";
 import { useScanStore } from "@/stores/useScanStore";
 import { useShouldShowHeader } from "@/utils/sidebar";
@@ -130,16 +131,11 @@ export default function HomeClient() {
 
     const poll = async () => {
       try {
-        const res = await fetch(
-          `/api/scan/status?qrId=${encodeURIComponent(qrId)}`
-        );
-        if (!res.ok) return;
-        const data = (await res.json()) as {
-          scanned: boolean;
-          scannedAt?: number;
-        };
+        const data = await scanApi.getStatus(qrId);
         if (data.scanned) setScanStatus(data);
-      } catch (_) {}
+      } catch {
+        /* polling — silently ignore failures */
+      }
     };
 
     // Immediate first check (page load / reset)
