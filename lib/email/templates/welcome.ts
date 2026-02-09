@@ -1,0 +1,99 @@
+/**
+ * Welcome email: thanks for signing up + you're on the waitlist.
+ * Premium dark theme aligned with UseQR / shadcn UI.
+ */
+
+const BASE_URL = "https://useqr.codes";
+/** Public URL for the logo (must be absolute for email clients). */
+const LOGO_URL = `${BASE_URL}/logo/png/logo.png`;
+
+export function getWelcomeEmailSubject(): string {
+  return "Thanks for signing up — you're on the waitlist";
+}
+
+export function getWelcomeEmailHtml(options: { name?: string | null }): string {
+  const greeting = options.name?.trim()
+    ? `Hi ${escapeHtml(options.name.trim())},`
+    : "Hi there,";
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>${escapeHtml(getWelcomeEmailSubject())}</title>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
+</head>
+<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif;-webkit-font-smoothing:antialiased;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#0a0a0a;">
+    <tr>
+      <td align="center" style="padding:40px 24px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:480px;margin:0 auto;">
+          <!-- Logo / Brand -->
+          <tr>
+            <td style="padding-bottom:32px;text-align:center;">
+              <a href="${BASE_URL}" style="text-decoration:none;display:inline-block;">
+                <img src="${LOGO_URL}" alt="UseQR" width="120" height="40" style="display:block;height:40px;width:auto;max-width:120px;border:0;" />
+              </a>
+            </td>
+          </tr>
+          <!-- Card -->
+          <tr>
+            <td style="background-color:#171717;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:40px 32px;box-shadow:0 4px 24px rgba(0,0,0,0.4);">
+              <p style="margin:0 0 24px;font-size:18px;line-height:1.5;color:#fafafa;font-weight:500;">${greeting}</p>
+              <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#e4e4e7;">Thanks for signing up for UseQR. You're on the waitlist — we'll notify you when the full dashboard is live.</p>
+              <p style="margin:0 0 32px;font-size:16px;line-height:1.6;color:#a1a1aa;">We're building the full experience — in the meantime, feel free to explore the app and see what's coming.</p>
+              <!-- CTA Buttons -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0;">
+                <tr>
+                  <td style="padding-right:12px;vertical-align:middle;">
+                    <a href="${BASE_URL}/dashboard" style="display:inline-block;background-color:#10b981;color:#ffffff;font-size:14px;font-weight:500;text-decoration:none;padding:12px 24px;border-radius:8px;border:1px solid transparent;">Go to Dashboard</a>
+                  </td>
+                  <td style="vertical-align:middle;">
+                    <a href="${BASE_URL}/designs" style="display:inline-block;background-color:transparent;color:#fafafa;font-size:14px;font-weight:500;text-decoration:none;padding:12px 24px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);">Explore designs</a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:32px 0 0;padding-top:24px;border-top:1px solid rgba(255,255,255,0.08);font-size:14px;line-height:1.5;color:#71717a;text-align:right;">— The UseQR team</p>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top:32px;text-align:center;">
+              <p style="margin:0 0 8px;font-size:12px;color:#52525b;">
+                <a href="${BASE_URL}" style="color:#71717a;text-decoration:none;">useqr.codes</a>
+                <span style="color:rgba(255,255,255,0.2);margin:0 8px;">·</span>
+                <a href="${BASE_URL}/pricing" style="color:#71717a;text-decoration:none;">Pricing</a>
+                <span style="color:rgba(255,255,255,0.2);margin:0 8px;">·</span>
+                <a href="${BASE_URL}/contact" style="color:#71717a;text-decoration:none;">Contact</a>
+              </p>
+              <p style="margin:0;font-size:11px;color:#3f3f46;">You're receiving this because you signed up at UseQR.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`.trim();
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}

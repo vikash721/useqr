@@ -34,7 +34,7 @@ export function PlanThankYouModal({
             <DialogTitle className="text-xl text-center font-semibold tracking-tight text-white sm:text-2xl">
               Thank you so much for your interest
             </DialogTitle>
-            <DialogDescription className="text-base leading-relaxed text-zinc-400">
+            <DialogDescription className="text-base text-center leading-relaxed text-zinc-400">
               It really means a lot to us that you want to be part of UseQR. Our
               payments aren&apos;t live yet—we&apos;re working on it. In the
               meantime, reach out to us directly and we&apos;ll get you set up

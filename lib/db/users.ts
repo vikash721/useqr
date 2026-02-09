@@ -50,11 +50,14 @@ export async function ensureUserIndexes(): Promise<void> {
   );
 }
 
+export type UpsertUserResult = { user: UserDocument; created: boolean };
+
 /**
  * Upsert user from Clerk into our DB. Creates on first sync, updates on subsequent syncs.
  * Preserves existing createdAt; updates updatedAt and profile fields from Clerk.
+ * Returns { user, created: true } on insert, { user, created: false } on update.
  */
-export async function upsertUserFromClerk(clerkUser: ClerkUser): Promise<UserDocument> {
+export async function upsertUserFromClerk(clerkUser: ClerkUser): Promise<UpsertUserResult> {
   await ensureUserIndexes();
   const db = await getDb();
   const coll = db.collection<UserDocument>(USERS_COLLECTION);
@@ -80,7 +83,7 @@ export async function upsertUserFromClerk(clerkUser: ClerkUser): Promise<UserDoc
     );
     const updated = await coll.findOne({ clerkId: clerkUser.id });
     if (!updated) throw new Error("User update failed");
-    return updated as UserDocument;
+    return { user: updated as UserDocument, created: false };
   }
 
   const insert: UserDocument = {
@@ -91,7 +94,7 @@ export async function upsertUserFromClerk(clerkUser: ClerkUser): Promise<UserDoc
   await coll.insertOne(insert as UserDocument);
   const inserted = await coll.findOne({ clerkId: clerkUser.id });
   if (!inserted) throw new Error("User insert failed");
-  return inserted as UserDocument;
+  return { user: inserted as UserDocument, created: true };
 }
 
 /**

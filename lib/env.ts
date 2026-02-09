@@ -16,6 +16,8 @@ const serverEnvSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().min(1).optional(),
   /** Telegram chat ID where the bot sends messages. Required only for /api/telegram/send. */
   TELEGRAM_CHAT_ID: z.string().min(1).optional(),
+  /** Resend API key. Required for sending transactional email (welcome, waitlist). */
+  RESEND_API_KEY: z.string().min(1).optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
