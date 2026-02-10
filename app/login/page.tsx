@@ -259,11 +259,11 @@ function LoginPageContent() {
 
       <p className="mt-10 max-w-[400px] text-center text-xs text-zinc-500">
         By continuing, you are agreeing to UseQR&apos;s{" "}
-        <Link href="#" className="font-medium text-zinc-400 underline-offset-2 hover:text-zinc-300 hover:underline">
+        <Link href="/terms" className="font-medium text-zinc-400 underline-offset-2 hover:text-zinc-300 hover:underline">
           Terms of Service
         </Link>{" "}
         and{" "}
-        <Link href="#" className="font-medium text-zinc-400 underline-offset-2 hover:text-zinc-300 hover:underline">
+        <Link href="/privacy" className="font-medium text-zinc-400 underline-offset-2 hover:text-zinc-300 hover:underline">
           Privacy Policy
         </Link>
         .
