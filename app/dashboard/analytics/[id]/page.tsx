@@ -21,7 +21,7 @@ import {
   ChevronDown,
   Loader2,
   QrCode,
-  Scan,
+  ScanLine,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -314,7 +314,7 @@ export default function AnalyticsDetailPage() {
           </div>
 
           <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <StatCard label="Total scans" value={totalScans} icon={Scan} />
+            <StatCard label="Total scans" value={totalScans} icon={ScanLine} />
             <StatCard label="Last 7 days" value={last7Scans} icon={BarChart3} />
             <StatCard
               label="Last scanned"

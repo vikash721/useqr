@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { BarChart3, ChevronRight, Loader2, Scan, TrendingUp } from "lucide-react";
+import { BarChart3, ChevronRight, Loader2, ScanLine, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { qrsApi } from "@/lib/api";
 import { toast } from "@/lib/toast";
@@ -105,7 +105,7 @@ export function QRBasicAnalytics({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-4">
             <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-              <Scan className="size-5" aria-hidden />
+              <ScanLine className="size-5" aria-hidden />
             </div>
             <div>
               <h2

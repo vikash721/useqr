@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   BarChart3,
@@ -96,7 +96,7 @@ function TemplatePreview({ style }: { style: string }) {
   );
 }
 
-export default function CreateQRPage() {
+function CreateQRPageContent() {
   const previewQRId = useCreateQRStore((s) => s.previewQRId);
   const selectedType = useCreateQRStore((s) => s.selectedType);
   const name = useCreateQRStore((s) => s.name);
@@ -108,10 +108,47 @@ export default function CreateQRPage() {
   const setContent = useCreateQRStore((s) => s.setContent);
   const setSelectedTemplate = useCreateQRStore((s) => s.setSelectedTemplate);
   const setAnalyticsEnabled = useCreateQRStore((s) => s.setAnalyticsEnabled);
+  const loadForEdit = useCreateQRStore((s) => s.loadForEdit);
   const reset = useCreateQRStore((s) => s.reset);
+  const editingId = useCreateQRStore((s) => s.editingId);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("edit");
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [editLoading, setEditLoading] = useState(!!editId);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!editId || !editId.trim()) {
+      setEditLoading(false);
+      if (editingId) reset();
+      return;
+    }
+    let cancelled = false;
+    setEditLoading(true);
+    setEditError(null);
+    qrsApi
+      .get(editId)
+      .then((qr) => {
+        if (!cancelled) loadForEdit(qr);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setEditError(
+            err?.response?.status === 404
+              ? "QR code not found."
+              : err?.response?.data?.error ?? "Failed to load QR for editing."
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setEditLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [editId, loadForEdit, editingId, reset]);
 
   const handleSaveDraft = () => {
     toast.success("Draft saved — continue anytime from My QRs.");
@@ -126,27 +163,71 @@ export default function CreateQRPage() {
     setCreateLoading(true);
     setCreateError(null);
     try {
-      await qrsApi.create({
+      const body = {
         name: name?.trim() || undefined,
         contentType: selectedType,
         content: content.trim(),
         template: selectedTemplate,
         analyticsEnabled,
-        status: "active",
-      });
-      reset();
-      toast.success("QR code created.");
-      router.push("/dashboard/my-qrs");
+        ...(editingId ? {} : { status: "active" as const }),
+      };
+      if (editingId) {
+        await qrsApi.update(editingId, body);
+        reset();
+        toast.success("QR code updated.");
+        router.push(`/dashboard/my-qr/${editingId}`);
+      } else {
+        await qrsApi.create({ ...body, status: "active" });
+        reset();
+        toast.success("QR code created.");
+        router.push("/dashboard/my-qrs");
+      }
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { error?: string } } })?.response?.data
-          ?.error ?? "Failed to create QR. Try again.";
+          ?.error ?? (editingId ? "Failed to update QR. Try again." : "Failed to create QR. Try again.");
       setCreateError(msg);
       toast.error(msg);
     } finally {
       setCreateLoading(false);
     }
   };
+
+  const isEditMode = Boolean(editingId);
+
+  if (editLoading) {
+    return (
+      <div className="flex max-h-svh flex-col overflow-hidden">
+        <DashboardHeader />
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+              <Loader2 className="size-5 animate-spin" />
+              <span>Loading QR for editing...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (editId && editError) {
+    return (
+      <div className="flex max-h-svh flex-col overflow-hidden">
+        <DashboardHeader />
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-6 py-8 text-center">
+              <p className="text-sm text-destructive">{editError}</p>
+              <Button asChild variant="outline" className="mt-4">
+                <Link href="/dashboard/my-qrs">Back to My QRs</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex max-h-svh flex-col overflow-hidden">
@@ -160,20 +241,21 @@ export default function CreateQRPage() {
             size="sm"
             className="-ml-2 mb-4 text-muted-foreground hover:text-foreground"
           >
-            <Link href="/dashboard/my-qrs">
+            <Link href={isEditMode ? `/dashboard/my-qr/${editingId}` : "/dashboard/my-qrs"}>
               <ArrowLeft className="size-4" />
-              Back to My QRs
+              {isEditMode ? "Back to QR" : "Back to My QRs"}
             </Link>
           </Button>
 
           {/* Page title */}
           <div className="mb-8">
             <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-              Create QR Code
+              {isEditMode ? "Edit QR Code" : "Create QR Code"}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-              Choose a type, add your content, and get a reusable QR code you can
-              update anytime.
+              {isEditMode
+                ? "Update the type, content, or design. Changes apply to the same QR link."
+                : "Choose a type, add your content, and get a reusable QR code you can update anytime."}
             </p>
           </div>
 
@@ -450,7 +532,7 @@ export default function CreateQRPage() {
                   ) : (
                     <QrCode className="size-4" />
                   )}
-                  Create QR code
+                  {isEditMode ? "Update QR code" : "Create QR code"}
                 </Button>
               </div>
             </div>
@@ -481,5 +563,29 @@ export default function CreateQRPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function CreateQRPageFallback() {
+  return (
+    <div className="flex max-h-svh flex-col overflow-hidden">
+      <DashboardHeader />
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+            <Loader2 className="size-5 animate-spin" />
+            <span>Loading...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function CreateQRPage() {
+  return (
+    <Suspense fallback={<CreateQRPageFallback />}>
+      <CreateQRPageContent />
+    </Suspense>
   );
 }

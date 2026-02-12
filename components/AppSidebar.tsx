@@ -1,15 +1,16 @@
 "use client";
 
 import { useClerk } from "@clerk/nextjs";
+import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
   ChevronsUpDown,
   CreditCard,
+  Crown,
   LayoutDashboard,
   LogOut,
   Package,
   PencilRuler,
-  Plus,
   QrCode,
   User,
 } from "lucide-react";
@@ -45,16 +46,42 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUserStore } from "@/stores/useUserStore";
 
-const SIDEBAR_NAV = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "My QRs", href: "/dashboard/my-qrs", icon: QrCode },
-  { label: "Create QR", href: "/dashboard/create", icon: Plus },
-  { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
-  { label: "Design QR", href: "/dashboard/designs", icon: PencilRuler },
-  { label: "My Orders", href: "/dashboard/my-orders", icon: Package },
-  { label: "Pricing", href: "/dashboard/pricing", icon: CreditCard },
-  { label: "Profile", href: "/dashboard/profile", icon: User },
-] as const;
+type NavItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  premium?: boolean;
+};
+
+const SIDEBAR_GROUPS: { label: string; items: NavItem[] }[] = [
+  {
+    label: "Overview",
+    items: [
+      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: "QR codes",
+    items: [
+      { label: "My QRs", href: "/dashboard/my-qrs", icon: QrCode },
+      { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3, premium: true },
+    ],
+  },
+  {
+    label: "Tools",
+    items: [
+      { label: "Design QR", href: "/dashboard/designs", icon: PencilRuler },
+      { label: "My Orders", href: "/dashboard/my-orders", icon: Package },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { label: "Pricing", href: "/dashboard/pricing", icon: CreditCard },
+      { label: "Profile", href: "/dashboard/profile", icon: User },
+    ],
+  },
+];
 
 export function AppSidebar() {
   const logoRef = useRef<AnimatedLogoHandle>(null);
@@ -98,33 +125,46 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className="transition-opacity duration-300 group-data-[collapsible=icon]:opacity-0">
-            App
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {SIDEBAR_NAV.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <SidebarNavItem key={item.label}>
-                    {({ isHovered }) => (
-                      <SidebarMenuButton asChild tooltip={item.label}>
-                        <Link href={item.href}>
-                          <AnimatedSidebarIcon
-                            icon={Icon}
-                            isHovered={isHovered}
-                          />
-                          {item.label}
-                        </Link>
-                      </SidebarMenuButton>
-                    )}
-                  </SidebarNavItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {SIDEBAR_GROUPS.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel className="transition-opacity duration-300 group-data-[collapsible=icon]:opacity-0">
+              {group.label}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const tooltipLabel = item.premium ? `${item.label} (Premium)` : item.label;
+                  return (
+                    <SidebarNavItem key={item.label}>
+                      {({ isHovered }) => (
+                        <SidebarMenuButton asChild tooltip={tooltipLabel}>
+                          <Link href={item.href} className="flex items-center gap-2">
+                            <AnimatedSidebarIcon
+                              icon={Icon}
+                              isHovered={isHovered}
+                            />
+                            <span className="flex flex-1 items-center gap-1.5 truncate">
+                              {item.label}
+                              {item.premium && (
+                                <span
+                                  className="flex shrink-0 items-center rounded-md border border-amber-500/40 bg-linear-to-r from-amber-500/15 via-yellow-400/10 to-amber-500/15 px-1.5 py-0.5 group-data-[collapsible=icon]:hidden"
+                                  title="Premium"
+                                >
+                                  <Crown className="size-3 text-amber-500 dark:text-amber-400" />
+                                </span>
+                              )}
+                            </span>
+                          </Link>
+                        </SidebarMenuButton>
+                      )}
+                    </SidebarNavItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border transition-colors duration-300">
