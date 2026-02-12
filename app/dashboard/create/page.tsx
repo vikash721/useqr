@@ -21,6 +21,7 @@ import {
   Save,
   User,
   Wifi,
+  Maximize2,
 } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { QRCodePreview } from "@/components/qr/QRCodePreview";
@@ -30,7 +31,29 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { qrsApi } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { useCreateQRStore } from "@/stores/useCreateQRStore";
+import { LANDING_THEMES, getThemeById } from "@/lib/qr/landing-theme";
+import { LandingThemePreview } from "@/components/qr/LandingThemePreview";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { CountryCodeSelect } from "@/components/CountryCodeSelect";
+import { normalizePhoneDigits } from "@/lib/countries";
 import { cn } from "@/lib/utils";
+import type { LandingThemeDb } from "@/lib/db/schemas/qr";
+
+const PHONE_TYPES = ["phone", "sms", "whatsapp"] as const;
+function isPhoneType(type: string | null): type is (typeof PHONE_TYPES)[number] {
+  return type !== null && PHONE_TYPES.includes(type as (typeof PHONE_TYPES)[number]);
+}
+
+/** Types that show a landing page when scanned; URL redirects so no landing. */
+const TYPES_WITH_LANDING = ["vcard", "wifi", "text", "email", "sms", "phone", "location", "event", "whatsapp"] as const;
+function hasLandingPage(contentType: string | null): boolean {
+  return contentType !== null && contentType !== "url" && TYPES_WITH_LANDING.includes(contentType as (typeof TYPES_WITH_LANDING)[number]);
+}
 
 const QR_TYPES = [
   { id: "url" as const, label: "URL / Link", description: "Website, landing page, or any link", icon: Link2, contentLabel: "URL or link", contentPlaceholder: "https://example.com" },
@@ -102,11 +125,17 @@ function CreateQRPageContent() {
   const name = useCreateQRStore((s) => s.name);
   const content = useCreateQRStore((s) => s.content);
   const selectedTemplate = useCreateQRStore((s) => s.selectedTemplate);
+  const landingTheme = useCreateQRStore((s) => s.landingTheme);
   const analyticsEnabled = useCreateQRStore((s) => s.analyticsEnabled);
   const setSelectedType = useCreateQRStore((s) => s.setSelectedType);
   const setName = useCreateQRStore((s) => s.setName);
   const setContent = useCreateQRStore((s) => s.setContent);
+  const phoneCountryCode = useCreateQRStore((s) => s.phoneCountryCode);
+  const setPhoneCountryCode = useCreateQRStore((s) => s.setPhoneCountryCode);
+  const phoneMessage = useCreateQRStore((s) => s.phoneMessage);
+  const setPhoneMessage = useCreateQRStore((s) => s.setPhoneMessage);
   const setSelectedTemplate = useCreateQRStore((s) => s.setSelectedTemplate);
+  const setLandingTheme = useCreateQRStore((s) => s.setLandingTheme);
   const setAnalyticsEnabled = useCreateQRStore((s) => s.setAnalyticsEnabled);
   const loadForEdit = useCreateQRStore((s) => s.loadForEdit);
   const reset = useCreateQRStore((s) => s.reset);
@@ -118,6 +147,7 @@ function CreateQRPageContent() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [editLoading, setEditLoading] = useState(!!editId);
   const [editError, setEditError] = useState<string | null>(null);
+  const [previewThemeId, setPreviewThemeId] = useState<LandingThemeDb | null>(null);
 
   useEffect(() => {
     if (!editId || !editId.trim()) {
@@ -160,14 +190,30 @@ function CreateQRPageContent() {
       toast.error("Choose a type and enter content.");
       return;
     }
+    if (isPhoneType(selectedType)) {
+      const nationalDigits = normalizePhoneDigits(content.trim());
+      if (!nationalDigits) {
+        toast.error("Enter a valid phone number (leading zeros are removed automatically).");
+        return;
+      }
+    }
     setCreateLoading(true);
     setCreateError(null);
+    let contentToSend = content.trim();
+    if (isPhoneType(selectedType)) {
+      const dialDigits = phoneCountryCode.replace(/\D/g, "");
+      const nationalDigits = normalizePhoneDigits(contentToSend);
+      contentToSend = dialDigits + nationalDigits;
+    }
+    const isSmsOrWhatsApp = selectedType === "sms" || selectedType === "whatsapp";
     try {
       const body = {
         name: name?.trim() || undefined,
         contentType: selectedType,
-        content: content.trim(),
+        content: contentToSend,
+        ...(isSmsOrWhatsApp && phoneMessage.trim() ? { message: phoneMessage.trim() } : {}),
         template: selectedTemplate,
+        landingTheme,
         analyticsEnabled,
         ...(editingId ? {} : { status: "active" as const }),
       };
@@ -358,22 +404,81 @@ function CreateQRPageContent() {
                   {selectedType && (() => {
                     const typeConfig = QR_TYPES.find((t) => t.id === selectedType);
                     if (!typeConfig) return null;
+                    const showCountryCode = isPhoneType(selectedType);
+                    const showMessageField = selectedType === "sms" || selectedType === "whatsapp";
                     return (
-                      <div>
-                        <label
-                          htmlFor="qr-content"
-                          className="mb-1.5 block text-sm font-medium text-foreground"
-                        >
-                          {typeConfig.contentLabel}
-                        </label>
-                        <Input
-                          id="qr-content"
-                          type="text"
-                          placeholder={typeConfig.contentPlaceholder}
-                          value={content}
-                          onChange={(e) => setContent(e.target.value)}
-                          className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
-                        />
+                      <div className="space-y-4">
+                        <div>
+                          <label
+                            htmlFor="qr-content"
+                            className="mb-1.5 block text-sm font-medium text-foreground"
+                          >
+                            {showCountryCode
+                              ? selectedType === "sms"
+                                ? "Phone number"
+                                : selectedType === "whatsapp"
+                                  ? "Phone number"
+                                  : typeConfig.contentLabel
+                              : typeConfig.contentLabel}
+                          </label>
+                        {showCountryCode ? (
+                          <>
+                            <div className="flex gap-2">
+                              <CountryCodeSelect
+                                value={phoneCountryCode}
+                                onValueChange={setPhoneCountryCode}
+                                triggerClassName="shrink-0 border-border focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
+                              />
+                              <Input
+                                id="qr-content"
+                                type="tel"
+                                inputMode="numeric"
+                                autoComplete="tel-national"
+                                placeholder="555 123 4567"
+                                value={content}
+                                onChange={(e) => setContent(e.target.value)}
+                                className="flex-1 border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
+                              />
+                            </div>
+                            <p className="mt-1.5 text-xs text-muted-foreground">
+                              Enter number without leading 0 (e.g. 98765 43210). Leading zeros are removed automatically for international format.
+                            </p>
+                          </>
+                        ) : (
+                            <Input
+                              id="qr-content"
+                              type="text"
+                              placeholder={typeConfig.contentPlaceholder}
+                              value={content}
+                              onChange={(e) => setContent(e.target.value)}
+                              className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
+                            />
+                          )}
+                        </div>
+                        {showMessageField && (
+                          <div>
+                            <label
+                              htmlFor="qr-phone-message"
+                              className="mb-1.5 block text-sm font-medium text-foreground"
+                            >
+                              {selectedType === "sms"
+                                ? "Message (optional)"
+                                : "Pre-filled message (optional)"}
+                            </label>
+                            <Input
+                              id="qr-phone-message"
+                              type="text"
+                              placeholder={
+                                selectedType === "sms"
+                                  ? "Hi, I wanted to reach out..."
+                                  : "Pre-filled text when they open the chat"
+                              }
+                              value={phoneMessage}
+                              onChange={(e) => setPhoneMessage(e.target.value)}
+                              className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
+                            />
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
@@ -437,6 +542,127 @@ function CreateQRPageContent() {
                   })}
                 </div>
               </section>
+
+              {/* Step 4: Landing page theme (only when scan shows a landing page; URL redirects) */}
+              {hasLandingPage(selectedType) ? (
+                <section
+                  className="rounded-xl border border-border bg-card p-6 shadow-sm ring-1 ring-border/50"
+                  aria-labelledby="qr-landing-heading"
+                >
+                  <h2
+                    id="qr-landing-heading"
+                    className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-foreground"
+                  >
+                    <span className="flex size-7 items-center justify-center rounded-md bg-emerald-500/15 text-emerald-500">
+                      4
+                    </span>
+                    Landing page theme
+                  </h2>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    How the page looks when someone scans your QR. Pick a style below — you can change it later.
+                  </p>
+                  <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    {LANDING_THEMES.map((theme) => {
+                      const isSelected = landingTheme === theme.id;
+                      return (
+                        <div
+                          key={theme.id}
+                          className={cn(
+                            "relative flex flex-col gap-3 rounded-xl border p-3 text-left transition-all",
+                            isSelected
+                              ? "border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500/30"
+                              : "border-border bg-card"
+                          )}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setLandingTheme(theme.id)}
+                            className={cn(
+                              "flex flex-col gap-3 text-left transition-all rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                              "hover:opacity-95"
+                            )}
+                          >
+                            <div className="aspect-9/14 min-h-[100px] w-full overflow-hidden rounded-lg border border-border/80 bg-muted/20 relative">
+                              <LandingThemePreview
+                                themeId={theme.id}
+                                contentType={selectedType ?? undefined}
+                                size="card"
+                                className="h-full w-full"
+                              />
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                className="absolute bottom-1.5 right-1.5 h-7 gap-1 px-2 text-xs shadow-sm"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setPreviewThemeId(theme.id);
+                                }}
+                              >
+                                <Maximize2 className="size-3.5" />
+                                Preview
+                              </Button>
+                            </div>
+                            <div>
+                              <span className="block text-sm font-medium text-foreground">
+                                {theme.label}
+                              </span>
+                              <span className="block text-xs text-muted-foreground">
+                                {theme.description}
+                              </span>
+                            </div>
+                          </button>
+                          {isSelected && (
+                            <div className="absolute right-2 top-2 flex size-5 items-center justify-center rounded-full bg-emerald-500 text-white pointer-events-none">
+                              <Check className="size-3" aria-hidden />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Popup preview dialog */}
+                  <Dialog
+                    open={previewThemeId !== null}
+                    onOpenChange={(open) => !open && setPreviewThemeId(null)}
+                  >
+                    <DialogContent className="max-w-[380px] p-0 overflow-hidden gap-0">
+                      <DialogHeader className="p-4 pb-2">
+                        <DialogTitle>
+                          {previewThemeId
+                            ? getThemeById(previewThemeId)?.label ?? "Preview"
+                            : "Preview"}
+                        </DialogTitle>
+                        <p className="text-xs text-muted-foreground">
+                          How this theme looks when someone scans your QR
+                        </p>
+                      </DialogHeader>
+                      <div className="flex justify-center bg-muted/30 px-4 pb-6 pt-2">
+                        <div className="w-[280px] overflow-hidden rounded-2xl border border-border bg-background shadow-lg">
+                          {previewThemeId && (
+                            <LandingThemePreview
+                              themeId={previewThemeId}
+                              contentType={selectedType ?? undefined}
+                              size="popup"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </section>
+              ) : selectedType === "url" ? (
+                <section
+                  className="rounded-xl border border-border/60 bg-muted/30 p-5"
+                  aria-labelledby="qr-landing-skip"
+                >
+                  <p id="qr-landing-skip" className="text-sm text-muted-foreground">
+                    <span className="font-medium text-foreground">Links open directly.</span> When someone scans this QR, they’ll go straight to your URL — no landing page. Landing theme only applies to other types (call, contact, text, etc.).
+                  </p>
+                </section>
+              ) : null}
 
               {/* Analytics toggle */}
               <section

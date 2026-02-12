@@ -11,11 +11,13 @@ export type QRListItem = {
   content: string;
   payload: string;
   template: string;
+  landingTheme?: string;
   analyticsEnabled: boolean;
   status: string;
   scanCount: number;
   createdAt: string;
   updatedAt: string;
+  metadata?: { message?: string };
 };
 
 export type QRListResponse = {
@@ -41,7 +43,10 @@ export type QRCreateBody = {
   name?: string;
   contentType: string;
   content: string;
+  /** Optional message for SMS (body) or WhatsApp (pre-filled text). */
+  message?: string;
   template?: string;
+  landingTheme?: string;
   analyticsEnabled?: boolean;
   status?: string;
 };
@@ -50,7 +55,9 @@ export type QRUpdateBody = {
   name?: string;
   contentType?: string;
   content?: string;
+  message?: string;
   template?: string;
+  landingTheme?: string;
   analyticsEnabled?: boolean;
   status?: string;
 };

@@ -40,11 +40,13 @@ export async function GET(_request: Request, context: RouteContext) {
         content: doc.content,
         payload: doc.payload,
         template: doc.template,
+        landingTheme: doc.landingTheme ?? "default",
         analyticsEnabled: doc.analyticsEnabled,
         status: doc.status,
         scanCount: doc.scanCount,
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
+        ...(doc.metadata ? { metadata: doc.metadata } : {}),
       },
     });
   } catch (err) {
@@ -97,8 +99,9 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     const contentType = parsed.data.contentType ?? existing.contentType;
     const content = parsed.data.content ?? existing.content;
+    const message = parsed.data.message;
     const baseUrl = getCardBaseUrl();
-    const payload = buildQRData(contentType, content, { baseUrl, qrId: id });
+    const payload = buildQRData(contentType, content, { baseUrl, qrId: id, message });
 
     const update: QRUpdateInput = { ...parsed.data, payload };
     const doc = await updateQR(id, user.id, update);
@@ -115,11 +118,13 @@ export async function PATCH(request: Request, context: RouteContext) {
         content: doc.content,
         payload: doc.payload,
         template: doc.template,
+        landingTheme: doc.landingTheme ?? "default",
         analyticsEnabled: doc.analyticsEnabled,
         status: doc.status,
         scanCount: doc.scanCount,
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
+        ...(doc.metadata ? { metadata: doc.metadata } : {}),
       },
     });
   } catch (err) {

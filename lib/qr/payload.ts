@@ -1,7 +1,10 @@
 /**
  * Builds the raw string to encode in a QR code (URL, text, etc.) from type + content.
  * Used for preview and for final save; single source of truth for encoding logic.
+ * Phone numbers are normalized (digits only, no leading zero) for global compatibility.
  */
+
+import { normalizePhoneDigits } from "@/lib/countries";
 
 /** QR content type IDs — must match create page QR_TYPES */
 export type QRContentType =
@@ -28,9 +31,11 @@ export function buildQRData(
     /** When set, returns the scan URL (baseUrl/q/{qrId}) encoded in the QR */
     baseUrl?: string;
     qrId?: string;
+    /** Optional message for SMS (body) or WhatsApp (pre-filled text). */
+    message?: string;
   }
 ): string {
-  const { baseUrl, qrId } = options ?? {};
+  const { baseUrl, qrId, message } = options ?? {};
 
   if (baseUrl && qrId) {
     return `${baseUrl.replace(/\/$/, "")}/q/${qrId}`;
@@ -41,19 +46,26 @@ export function buildQRData(
       return content.trim() || "https://example.com";
     case "text":
       return content.trim() || " ";
-    case "phone":
-      return content.trim() ? `tel:${content.trim()}` : "tel:";
+    case "phone": {
+      const num = normalizePhoneDigits(content.trim());
+      return num ? `tel:${num}` : "tel:";
+    }
     case "sms": {
-      const trimmed = content.trim();
-      if (!trimmed) return "sms:";
-      const [num, ...rest] = trimmed.split(/[,\s]/);
-      const body = rest.join(" ").trim();
+      const num = normalizePhoneDigits(content.trim());
+      if (!num) return "sms:";
+      const body = (message ?? "").trim();
       return body ? `sms:${num}?body=${encodeURIComponent(body)}` : `sms:${num}`;
     }
     case "email":
       return content.trim() ? `mailto:${content.trim()}` : "mailto:";
-    case "whatsapp":
-      return content.trim() ? `https://wa.me/${content.trim().replace(/\D/g, "")}` : "https://wa.me/";
+    case "whatsapp": {
+      const num = normalizePhoneDigits(content.trim());
+      if (!num) return "https://wa.me/";
+      const text = (message ?? "").trim();
+      return text
+        ? `https://wa.me/${num}?text=${encodeURIComponent(text)}`
+        : `https://wa.me/${num}`;
+    }
     case "location":
       return content.trim() || "geo:0,0";
     case "vcard":

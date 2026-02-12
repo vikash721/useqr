@@ -38,12 +38,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const { name, contentType, content, template, analyticsEnabled, status } =
+  const { name, contentType, content, message, template, landingTheme, analyticsEnabled, status } =
     parsed.data;
 
   const baseUrl = getCardBaseUrl();
   const _id = generateQRId();
-  const payload = buildQRData(contentType, content, { baseUrl, qrId: _id });
+  const payload = buildQRData(contentType, content, { baseUrl, qrId: _id, message });
+
+  const metadata =
+    message !== undefined && message !== ""
+      ? { message: message.trim() }
+      : undefined;
 
   try {
     await ensureQRIndexes();
@@ -55,8 +60,10 @@ export async function POST(request: Request) {
       content,
       payload,
       template,
+      landingTheme,
       analyticsEnabled,
       status,
+      ...(metadata ? { metadata } : {}),
     });
 
     return NextResponse.json({
@@ -68,11 +75,13 @@ export async function POST(request: Request) {
         content: doc.content,
         payload: doc.payload,
         template: doc.template,
+        landingTheme: doc.landingTheme ?? "default",
         analyticsEnabled: doc.analyticsEnabled,
         status: doc.status,
         scanCount: doc.scanCount,
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
+        ...(doc.metadata ? { metadata: doc.metadata } : {}),
       },
     });
   } catch (err) {
@@ -115,6 +124,7 @@ export async function GET(request: Request) {
       content: doc.content,
       payload: doc.payload,
       template: doc.template,
+      landingTheme: doc.landingTheme ?? "default",
       analyticsEnabled: doc.analyticsEnabled,
       status: doc.status,
       scanCount: doc.scanCount,

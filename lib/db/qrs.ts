@@ -20,6 +20,7 @@ export type CreateQRInput = QRCreateBody & {
   _id: string;
   clerkId: string;
   payload: string;
+  metadata?: Record<string, unknown>;
 };
 
 /**
@@ -37,11 +38,13 @@ export async function createQR(input: CreateQRInput): Promise<QRDocument> {
     content: input.content,
     payload: input.payload,
     template: input.template ?? "classic",
+    landingTheme: input.landingTheme ?? "default",
     analyticsEnabled: input.analyticsEnabled ?? true,
     status: input.status ?? "active",
     scanCount: 0,
     createdAt: now,
     updatedAt: now,
+    ...(input.metadata && Object.keys(input.metadata).length > 0 ? { metadata: input.metadata } : {}),
   };
   await coll.insertOne(doc);
   return doc;
@@ -123,6 +126,7 @@ export type QRUpdateInput = QRUpdateBody & { payload?: string };
 /**
  * Updates a QR. Only updates if _id + clerkId match. Returns the updated doc or null.
  * Pass payload when contentType or content changed (server recomputes).
+ * If update.message is set, it is stored in metadata.message (not as a top-level field).
  */
 export async function updateQR(
   id: string,
@@ -132,7 +136,13 @@ export async function updateQR(
   const db = await getDb();
   const coll = db.collection<QRDocument>(QRS_COLLECTION);
   const now = new Date();
-  const $set: Partial<QRDocument> = { ...update, updatedAt: now };
+  const { message, ...rest } = update;
+  const $set: Partial<QRDocument> = { ...rest, updatedAt: now };
+  if (message !== undefined) {
+    const existing = await coll.findOne({ _id: id, clerkId });
+    const prevMeta = (existing?.metadata as Record<string, unknown>) ?? {};
+    $set.metadata = { ...prevMeta, message };
+  }
   const result = await coll.findOneAndUpdate(
     { _id: id, clerkId },
     { $set },

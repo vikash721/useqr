@@ -30,6 +30,15 @@ export const qrTemplateSchema = z.enum([
 ]);
 export type QRTemplateDb = z.infer<typeof qrTemplateSchema>;
 
+/** Landing page theme when someone scans the QR (e.g. default, minimal, card, full). */
+export const landingThemeSchema = z.enum([
+  "default",
+  "minimal",
+  "card",
+  "full",
+]);
+export type LandingThemeDb = z.infer<typeof landingThemeSchema>;
+
 export const qrStatusSchema = z.enum(["draft", "active", "archived"]);
 export type QRStatus = z.infer<typeof qrStatusSchema>;
 
@@ -42,6 +51,7 @@ export const qrDocumentSchema = z.object({
   content: z.string(),
   payload: z.string(),
   template: qrTemplateSchema.default("classic"),
+  landingTheme: landingThemeSchema.default("default"),
   analyticsEnabled: z.boolean().default(true),
   status: qrStatusSchema.default("active"),
   scanCount: z.number().int().min(0).default(0),
@@ -57,7 +67,10 @@ export const qrCreateBodySchema = z.object({
   name: z.string().max(512).default(""),
   contentType: qrContentTypeSchema,
   content: z.string(),
+  /** Optional message for SMS (body) or WhatsApp (pre-filled text). Stored in metadata.message. */
+  message: z.string().max(1000).optional(),
   template: qrTemplateSchema.default("classic"),
+  landingTheme: landingThemeSchema.default("default"),
   analyticsEnabled: z.boolean().default(true),
   status: qrStatusSchema.default("active"),
 });
@@ -69,7 +82,9 @@ export const qrUpdateBodySchema = z.object({
   name: z.string().max(512).optional(),
   contentType: qrContentTypeSchema.optional(),
   content: z.string().optional(),
+  message: z.string().max(1000).optional(),
   template: qrTemplateSchema.optional(),
+  landingTheme: landingThemeSchema.optional(),
   analyticsEnabled: z.boolean().optional(),
   status: qrStatusSchema.optional(),
 });
