@@ -561,39 +561,50 @@ function CreateQRPageContent() {
                   <p className="mt-2 text-xs text-muted-foreground">
                     How the page looks when someone scans your QR. Pick a style below — you can change it later.
                   </p>
-                  <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-                    {LANDING_THEMES.map((theme) => {
-                      const isSelected = landingTheme === theme.id;
-                      return (
-                        <div
-                          key={theme.id}
-                          className={cn(
-                            "relative flex flex-col gap-3 rounded-xl border p-3 text-left transition-all",
-                            isSelected
-                              ? "border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500/30"
-                              : "border-border bg-card"
-                          )}
-                        >
-                          <button
-                            type="button"
-                            onClick={() => setLandingTheme(theme.id)}
+                  <div className="mt-4 max-h-[320px] overflow-y-auto overflow-x-hidden rounded-lg border border-border/60 bg-muted/20 p-1">
+                    <div className="flex flex-col gap-2">
+                      {LANDING_THEMES.map((theme) => {
+                        const isSelected = landingTheme === theme.id;
+                        return (
+                          <div
+                            key={theme.id}
                             className={cn(
-                              "flex flex-col gap-3 text-left transition-all rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                              "hover:opacity-95"
+                              "relative flex min-h-0 shrink-0 items-stretch gap-4 rounded-lg border p-3 text-left transition-all",
+                              isSelected
+                                ? "border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500/30"
+                                : "border-border bg-card hover:border-border/80"
                             )}
                           >
-                            <div className="aspect-9/14 min-h-[100px] w-full overflow-hidden rounded-lg border border-border/80 bg-muted/20 relative">
-                              <LandingThemePreview
-                                themeId={theme.id}
-                                contentType={selectedType ?? undefined}
-                                size="card"
-                                className="h-full w-full"
-                              />
+                            <button
+                              type="button"
+                              onClick={() => setLandingTheme(theme.id)}
+                              className="flex min-w-0 flex-1 items-stretch gap-4 text-left transition-colors rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                            >
+                              {/* Mini preview — fixed width on left */}
+                              <div className="h-[120px] w-[72px] shrink-0 overflow-hidden rounded-lg border border-border/80 bg-muted/30 shadow-sm">
+                                <LandingThemePreview
+                                  themeId={theme.id}
+                                  contentType={selectedType ?? undefined}
+                                  size="card"
+                                  className="h-full w-full"
+                                />
+                              </div>
+                              {/* Content — right side */}
+                              <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 pr-8">
+                                <span className="block text-sm font-medium text-foreground">
+                                  {theme.label}
+                                </span>
+                                <span className="block text-xs leading-snug text-muted-foreground">
+                                  {theme.description}
+                                </span>
+                              </div>
+                            </button>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
                               <Button
                                 type="button"
                                 variant="secondary"
                                 size="sm"
-                                className="absolute bottom-1.5 right-1.5 h-7 gap-1 px-2 text-xs shadow-sm"
+                                className="h-8 gap-1.5 px-2.5 text-xs shadow-sm"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
@@ -604,23 +615,15 @@ function CreateQRPageContent() {
                                 Preview
                               </Button>
                             </div>
-                            <div>
-                              <span className="block text-sm font-medium text-foreground">
-                                {theme.label}
-                              </span>
-                              <span className="block text-xs text-muted-foreground">
-                                {theme.description}
-                              </span>
-                            </div>
-                          </button>
-                          {isSelected && (
-                            <div className="absolute right-2 top-2 flex size-5 items-center justify-center rounded-full bg-emerald-500 text-white pointer-events-none">
-                              <Check className="size-3" aria-hidden />
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                            {isSelected && (
+                              <div className="absolute left-3 top-3 flex size-5 items-center justify-center rounded-full bg-emerald-500 text-white pointer-events-none">
+                                <Check className="size-3" aria-hidden />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {/* Popup preview dialog */}
