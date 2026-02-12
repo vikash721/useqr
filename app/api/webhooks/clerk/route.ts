@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { verifyWebhook } from "@clerk/nextjs/webhooks";
-import { deleteUserByClerkId } from "@/lib/db/users";
+import { deleteAllUserDataByClerkId } from "@/lib/db/delete-user-data";
+import { sendDeletionReportEmail } from "@/lib/email";
 
 /**
  * GET /api/webhooks/clerk
@@ -46,8 +47,15 @@ export async function POST(request: NextRequest) {
     if (evt.type === "user.deleted") {
       const clerkId = evt.data.id;
       if (clerkId) {
-        const deleted = await deleteUserByClerkId(clerkId);
-        console.log("[webhooks/clerk] user.deleted handled", { clerkId, deleted });
+        const result = await deleteAllUserDataByClerkId(clerkId);
+        console.log("[webhooks/clerk] user.deleted handled", { clerkId, ...result });
+        const emailResult = await sendDeletionReportEmail(clerkId, result);
+        if (!emailResult.success) {
+          console.error("[webhooks/clerk] Deletion report email failed", {
+            clerkId,
+            error: emailResult.error,
+          });
+        }
       }
     }
 

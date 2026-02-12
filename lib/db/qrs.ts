@@ -174,3 +174,14 @@ export async function deleteQR(
   );
   return (result.deletedCount ?? 0) > 0;
 }
+
+/**
+ * Deletes all QRs for a user (e.g. when user is deleted from Clerk).
+ * Returns the number of QRs deleted.
+ */
+export async function deleteAllQRsByClerkId(clerkId: string): Promise<number> {
+  const db = await getDb();
+  const coll = db.collection<QRDocument>(QRS_COLLECTION);
+  const result = await coll.deleteMany({ clerkId });
+  return result.deletedCount ?? 0;
+}

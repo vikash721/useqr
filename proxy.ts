@@ -2,6 +2,7 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 const isDashboard = createRouteMatcher(["/dashboard(.*)"]);
+const isManageUsers = createRouteMatcher(["/manage-users(.*)"]);
 /** Landing page and auth pages — redirect to /dashboard if already signed in */
 const isLandingOrAuth = createRouteMatcher(["/", "/login", "/signup", "/forgot-password"]);
 /** Clerk webhook — must be public (no auth); Clerk sends server-to-server POST */
@@ -28,9 +29,9 @@ export default clerkMiddleware(
       return NextResponse.redirect(url);
     }
 
-    if (isDashboard(req) && !isAuthenticated) {
+    if ((isDashboard(req) || isManageUsers(req)) && !isAuthenticated) {
       url.pathname = "/login";
-      url.searchParams.set("redirect", "/dashboard");
+      url.searchParams.set("redirect", req.nextUrl.pathname);
       return NextResponse.redirect(url);
     }
 
