@@ -38,7 +38,10 @@ function clerkUserToDocument(clerk: ClerkUser): UserUpsertInput {
 }
 
 /**
- * Ensure unique indexes on users collection. Idempotent; safe to call on every deploy.
+ * Ensure indexes on users collection. Idempotent; safe to call on every deploy.
+ * - clerkId: unique, for lookups/updates/deletes by Clerk id
+ * - email: unique sparse, for email uniqueness (nulls excluded)
+ * - createdAt: for list-all sort by newest (e.g. admin/waitlist)
  */
 export async function ensureUserIndexes(): Promise<void> {
   const db = await getDb();
@@ -48,6 +51,7 @@ export async function ensureUserIndexes(): Promise<void> {
     { email: 1 },
     { unique: true, sparse: true }
   );
+  await coll.createIndex({ createdAt: -1 });
 }
 
 export type UpsertUserResult = { user: UserDocument; created: boolean };

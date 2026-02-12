@@ -9,6 +9,8 @@ import {
   Check,
   Copy,
   ChevronDown,
+  Crown,
+  Download,
   ExternalLink,
   Loader2,
   Pencil,
@@ -36,7 +38,14 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { qrsApi, type QRListItem } from "@/lib/api";
 import { toast } from "@/lib/toast";
-import { getCardBaseUrl, type QRTemplateId, type QRStyle } from "@/lib/qr";
+import {
+  buildQRData,
+  downloadQRAsPng,
+  getCardBaseUrl,
+  sanitizeFilename,
+  type QRTemplateId,
+  type QRStyle,
+} from "@/lib/qr";
 import { cn } from "@/lib/utils";
 
 function formatContentType(type: string): string {
@@ -67,6 +76,12 @@ function formatDate(iso: string): string {
   }
 }
 
+const DOWNLOAD_QUALITIES = [
+  { label: "Standard (512px)", size: 512, description: "Screen & sharing", premium: false },
+  { label: "High (1024px)", size: 1024, description: "Large display & small print", premium: true },
+  { label: "Print (2048px)", size: 2048, description: "High-resolution print", premium: true },
+] as const;
+
 export default function MyQRDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -78,6 +93,7 @@ export default function MyQRDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [downloadLoading, setDownloadLoading] = useState(false);
 
   const fetchQr = useCallback(() => {
     if (!id) {
@@ -141,6 +157,32 @@ export default function MyQRDetailPage() {
       toast.error(msg);
     } finally {
       setStatusUpdating(false);
+    }
+  };
+
+  const handleDownload = async (size: number) => {
+    if (!qr) return;
+    setDownloadLoading(true);
+    try {
+      const data = buildQRData("url", "", {
+        baseUrl: getCardBaseUrl(),
+        qrId: qr.id,
+      });
+      const slug = sanitizeFilename(qr.name || qr.id);
+      const filename = `UseQR-${slug}-${size}px.png`;
+      await downloadQRAsPng({
+        data,
+        templateId: (qr.template || "classic") as QRTemplateId,
+        style: (qr.style ?? undefined) as QRStyle | undefined,
+        size,
+        filename,
+      });
+      toast.success(`Downloaded ${filename}`);
+    } catch (err) {
+      console.error("[download QR]", err);
+      toast.error("Download failed. Try again.");
+    } finally {
+      setDownloadLoading(false);
     }
   };
 
@@ -263,15 +305,56 @@ export default function MyQRDetailPage() {
                 )}
               >
                 <div className="grid gap-6 p-6 sm:grid-cols-[auto_1fr]">
-                  <div className="flex shrink-0 justify-center rounded-xl border border-border bg-muted/20 p-4">
-                    <QRCodePreview
-                      qrId={qr.id}
-                      templateId={(qr.template || "classic") as QRTemplateId}
-                      style={(qr.style ?? undefined) as QRStyle | undefined}
-                      size={200}
-                      compact
-                      className="shrink-0"
-                    />
+                  <div className="flex shrink-0 flex-col items-center gap-3">
+                    <div className="flex justify-center rounded-xl border border-border bg-muted/20 p-4">
+                      <QRCodePreview
+                        qrId={qr.id}
+                        templateId={(qr.template || "classic") as QRTemplateId}
+                        style={(qr.style ?? undefined) as QRStyle | undefined}
+                        size={200}
+                        compact
+                        className="shrink-0"
+                      />
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full gap-2"
+                          disabled={downloadLoading}
+                        >
+                          {downloadLoading ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            <Download className="size-4" />
+                          )}
+                          Download PNG
+                          <ChevronDown className="size-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="center" className="min-w-[220px]">
+                        {DOWNLOAD_QUALITIES.map(({ label, size: px, description, premium }) => (
+                          <DropdownMenuItem
+                            key={px}
+                            onClick={() => handleDownload(px)}
+                            disabled={downloadLoading}
+                          >
+                            <div className="flex w-full flex-col items-start gap-0.5">
+                              <span className="flex items-center gap-2 font-medium">
+                                {label}
+                                {premium && (
+                                  <Crown className="size-3.5 shrink-0 text-amber-500" aria-label="Premium" />
+                                )}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {description}
+                              </span>
+                            </div>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                   <div className="min-w-0 space-y-4">
                     <div>
@@ -390,19 +473,28 @@ export default function MyQRDetailPage() {
       </div>
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent showCloseButton className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete QR code?</DialogTitle>
-            <DialogDescription>
-              This will permanently delete this QR code. The scan link will no
-              longer work. This cannot be undone.
+        <DialogContent showCloseButton className="sm:max-w-md border-border/80 p-0 overflow-hidden">
+          <div className="flex flex-col items-start pt-8 pb-2 px-6 text-left">
+            <div className="flex flex-row items-center justify-start gap-3">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+                <Trash2 className="size-6" strokeWidth={1.5} />
+              </div>
+              <DialogHeader className="pb-0 pt-0 text-left">
+                <DialogTitle className="text-xl font-semibold tracking-tight">
+                  Delete this QR code?
+                </DialogTitle>
+              </DialogHeader>
+            </div>
+            <DialogDescription className="mt-3 text-left text-sm text-muted-foreground leading-relaxed max-w-[320px]">
+              The scan link will stop working and this cannot be undone. Your analytics data will also be removed.
             </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
+          </div>
+          <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end px-6 pb-6 pt-2 bg-muted/30 border-t border-border/50">
             <Button
               variant="outline"
               onClick={() => setDeleteOpen(false)}
               disabled={deleting}
+              className="sm:min-w-[88px]"
             >
               Cancel
             </Button>
@@ -410,17 +502,18 @@ export default function MyQRDetailPage() {
               variant="destructive"
               onClick={handleDelete}
               disabled={deleting}
+              className="gap-2 sm:min-w-[100px]"
             >
               {deleting ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
                 <>
                   <Trash2 className="size-4" />
-                  Delete
+                  Delete QR
                 </>
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </>

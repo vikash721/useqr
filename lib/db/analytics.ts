@@ -1,3 +1,4 @@
+import type { ClientSession } from "mongodb";
 import { getDb } from "@/lib/db/mongodb";
 import { SCAN_EVENTS_COLLECTION, type ScanEventDocument } from "@/lib/db/schemas/analytics";
 import { incrementQRScanCount } from "@/lib/db/qrs";
@@ -30,6 +31,20 @@ export type ScanAnalyticsResult = {
   lastScannedAt: string | null;
   scansByDay: ScanByDay[];
 };
+
+/**
+ * Deletes all scan events for a QR. Call when deleting a QR so analytics are removed cascadically.
+ * Pass session for transactional delete (both QR and scan events in one transaction).
+ */
+export async function deleteScanEventsByQrId(
+  qrId: string,
+  session?: ClientSession
+): Promise<number> {
+  const db = await getDb();
+  const coll = db.collection<ScanEventDocument>(SCAN_EVENTS_COLLECTION);
+  const result = await coll.deleteMany({ qrId }, session ? { session } : undefined);
+  return result.deletedCount ?? 0;
+}
 
 /**
  * Returns aggregated scan analytics for a QR: last scan time and scans grouped by day (from QR creation to now).

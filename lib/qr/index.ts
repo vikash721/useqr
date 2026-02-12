@@ -13,6 +13,8 @@ export {
 export { getQRStylingOptions } from "./options";
 export type { QRStylingOptions } from "./options";
 export { buildQRData, getCardBaseUrl } from "./payload";
+export { downloadQRAsPng, sanitizeFilename } from "./download";
+export type { DownloadQROptions } from "./download";
 export type { QRContentType } from "./payload";
 export {
   getQRStylingOptionsFromStyle,

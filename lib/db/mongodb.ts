@@ -12,8 +12,9 @@ declare global {
 
 /**
  * Singleton MongoClient for serverless (Next.js). Reuse across hot reloads.
+ * Exported for transactional operations (e.g. delete QR + analytics atomically).
  */
-function getClient(): MongoClient {
+export function getClient(): MongoClient {
   if (global._mongoClient) {
     return global._mongoClient;
   }

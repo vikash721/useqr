@@ -1,3 +1,4 @@
+import type { ClientSession } from "mongodb";
 import { getDb } from "@/lib/db/mongodb";
 import {
   QRS_COLLECTION,
@@ -158,10 +159,18 @@ export async function updateQR(
 
 /**
  * Deletes a QR. Only deletes if _id + clerkId match. Returns true if deleted.
+ * Pass session for transactional delete (e.g. with scan events in one transaction).
  */
-export async function deleteQR(id: string, clerkId: string): Promise<boolean> {
+export async function deleteQR(
+  id: string,
+  clerkId: string,
+  session?: ClientSession
+): Promise<boolean> {
   const db = await getDb();
   const coll = db.collection<QRDocument>(QRS_COLLECTION);
-  const result = await coll.deleteOne({ _id: id, clerkId });
+  const result = await coll.deleteOne(
+    { _id: id, clerkId },
+    session ? { session } : undefined
+  );
   return (result.deletedCount ?? 0) > 0;
 }

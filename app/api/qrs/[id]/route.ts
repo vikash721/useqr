@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { buildQRData, getCardBaseUrl } from "@/lib/qr";
+import { deleteScanEventsByQrId } from "@/lib/db/analytics";
+import { getClient } from "@/lib/db/mongodb";
 import {
   getQRByIdAndClerk,
   updateQR,
@@ -164,10 +166,43 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
 
   try {
-    const deleted = await deleteQR(id, user.id);
-    if (!deleted) {
+    const existing = await getQRByIdAndClerk(id, user.id);
+    if (!existing) {
       return NextResponse.json({ error: "QR not found" }, { status: 404 });
     }
+
+    const client = getClient();
+    const session = client.startSession();
+    try {
+      await session.withTransaction(async () => {
+        await deleteScanEventsByQrId(id, session);
+        const deleted = await deleteQR(id, user.id, session);
+        if (!deleted) {
+          throw new Error("QR not found");
+        }
+      });
+    } catch (txErr) {
+      const isTransactionError =
+        txErr instanceof Error &&
+        (txErr.message === "QR not found" ||
+          /transaction|replica set|not supported/i.test(txErr.message));
+      if (isTransactionError && txErr instanceof Error && txErr.message === "QR not found") {
+        return NextResponse.json({ error: "QR not found" }, { status: 404 });
+      }
+      if (txErr instanceof Error && /transaction|replica set|not supported/i.test(txErr.message)) {
+        await session.endSession().catch(() => {});
+        await deleteScanEventsByQrId(id);
+        const deleted = await deleteQR(id, user.id);
+        if (!deleted) {
+          return NextResponse.json({ error: "QR not found" }, { status: 404 });
+        }
+        return NextResponse.json({ ok: true });
+      }
+      throw txErr;
+    } finally {
+      await session.endSession().catch(() => {});
+    }
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[DELETE /api/qrs/[id]]", err);

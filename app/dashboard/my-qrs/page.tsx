@@ -222,10 +222,10 @@ export default function MyQRsPage() {
                       "flex flex-row items-center gap-6 py-1"
                   )}
                 >
-                  {/* QR thumbnail */}
+                  {/* QR thumbnail + type badge */}
                   <div
                     className={cn(
-                      "flex shrink-0 items-center justify-center border-border bg-muted/20",
+                      "relative flex shrink-0 items-center justify-center border-border bg-muted/20",
                       view === "grid"
                         ? "w-full rounded-t-2xl border-b p-6"
                         : "m-4 size-24 rounded-xl border p-2"
@@ -239,6 +239,16 @@ export default function MyQRsPage() {
                       compact
                       className="shrink-0"
                     />
+                    <span
+                      className={cn(
+                        "absolute rounded-md bg-background/95 px-2 py-0.5 text-[11px] font-medium text-muted-foreground shadow-sm ring-1 ring-border/50 backdrop-blur-sm",
+                        view === "grid"
+                          ? "bottom-2 right-2"
+                          : "bottom-1 right-1"
+                      )}
+                    >
+                      {formatContentType(qr.contentType)}
+                    </span>
                   </div>
 
                   {/* Content */}
@@ -250,16 +260,13 @@ export default function MyQRsPage() {
                   >
                     <Link
                       href={`/dashboard/my-qr/${qr.id}`}
-                      className="focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:ring-offset-2 rounded-md"
+                      className="focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:ring-offset-2 rounded-md block"
                     >
                       <h3 className="truncate text-base font-semibold text-foreground transition-colors hover:text-emerald-600 sm:text-lg">
                         {qr.name || "Unnamed QR"}
                       </h3>
                     </Link>
                     <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-                      <span className="inline-flex rounded-full bg-muted/80 px-2.5 py-0.5 font-medium text-foreground/90">
-                        {formatContentType(qr.contentType)}
-                      </span>
                       {qr.status !== "active" && (
                         <span className="inline-flex rounded-full bg-amber-500/15 px-2 py-0.5 text-amber-600 dark:text-amber-400">
                           {qr.status === "disabled" ? "Disabled" : qr.status}
