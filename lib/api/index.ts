@@ -15,3 +15,14 @@ export { scanApi } from "./scan";
 export type { ScanStatusPayload } from "./scan";
 
 export { telegramApi } from "./telegram";
+
+export { qrsApi } from "./qrs";
+export type {
+  QRListItem,
+  QRListResponse,
+  QRDetailResponse,
+  QRCreateResponse,
+  QRUpdateResponse,
+  QRCreateBody,
+  QRUpdateBody,
+} from "./qrs";
