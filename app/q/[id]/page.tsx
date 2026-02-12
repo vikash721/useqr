@@ -1,5 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import { recordScan } from "@/lib/db/analytics";
 import { getQRById } from "@/lib/db/qrs";
 
 type Props = {
@@ -20,6 +21,14 @@ export default async function ScanPage({ params }: Props) {
   const qr = await getQRById(id);
   if (!qr) {
     notFound();
+  }
+
+  if (qr.analyticsEnabled) {
+    try {
+      await recordScan(id);
+    } catch (err) {
+      console.error("[Scan page] Failed to record scan:", err);
+    }
   }
 
   const { contentType, content } = qr;

@@ -55,6 +55,14 @@ export type QRUpdateBody = {
   status?: string;
 };
 
+export type ScanByDay = { date: string; scans: number };
+
+export type QRAnalyticsResponse = {
+  qr: { id: string; name: string; contentType: string; createdAt: string; scanCount: number };
+  lastScannedAt: string | null;
+  scansByDay: ScanByDay[];
+};
+
 // ---------------------------------------------------------------------------
 // Endpoints
 // ---------------------------------------------------------------------------
@@ -84,5 +92,11 @@ export const qrsApi = {
   delete: (id: string) =>
     api
       .delete<{ ok: boolean }>(`/api/qrs/${encodeURIComponent(id)}`)
+      .then((res) => res.data),
+
+  /** Get scan analytics for a QR (scans by day, last scanned). 404 if not found or not owned. */
+  getAnalytics: (id: string) =>
+    api
+      .get<QRAnalyticsResponse>(`/api/qrs/${encodeURIComponent(id)}/analytics`)
       .then((res) => res.data),
 } as const;

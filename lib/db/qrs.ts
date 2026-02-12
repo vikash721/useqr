@@ -71,6 +71,19 @@ export async function getQRById(id: string): Promise<QRDocument | null> {
   return doc as QRDocument | null;
 }
 
+/**
+ * Increments scanCount for a QR by _id (used when recording a scan). No clerkId check.
+ */
+export async function incrementQRScanCount(id: string): Promise<void> {
+  const db = await getDb();
+  const coll = db.collection<QRDocument>(QRS_COLLECTION);
+  const now = new Date();
+  await coll.updateOne(
+    { _id: id },
+    { $inc: { scanCount: 1 }, $set: { updatedAt: now } }
+  );
+}
+
 export type ListQROptions = {
   limit?: number;
   skip?: number;

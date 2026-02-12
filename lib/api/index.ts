@@ -25,4 +25,6 @@ export type {
   QRUpdateResponse,
   QRCreateBody,
   QRUpdateBody,
+  ScanByDay,
+  QRAnalyticsResponse,
 } from "./qrs";
