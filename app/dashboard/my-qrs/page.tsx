@@ -260,6 +260,11 @@ export default function MyQRsPage() {
                       <span className="inline-flex rounded-full bg-muted/80 px-2.5 py-0.5 font-medium text-foreground/90">
                         {formatContentType(qr.contentType)}
                       </span>
+                      {qr.status !== "active" && (
+                        <span className="inline-flex rounded-full bg-amber-500/15 px-2 py-0.5 text-amber-600 dark:text-amber-400">
+                          {qr.status === "disabled" ? "Disabled" : qr.status}
+                        </span>
+                      )}
                       <span>{qr.scanCount ?? 0} scans</span>
                       <span>{formatDate(qr.createdAt)}</span>
                     </div>

@@ -63,7 +63,7 @@ export const landingThemeSchema = z.enum([
 ]);
 export type LandingThemeDb = z.infer<typeof landingThemeSchema>;
 
-export const qrStatusSchema = z.enum(["draft", "active", "archived"]);
+export const qrStatusSchema = z.enum(["draft", "active", "disabled", "archived"]);
 export type QRStatus = z.infer<typeof qrStatusSchema>;
 
 /** Full document as stored in DB (with _id and dates). */

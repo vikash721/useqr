@@ -109,6 +109,15 @@ function CreateQRPageContent() {
   const [editError, setEditError] = useState<string | null>(null);
   const [previewThemeId, setPreviewThemeId] = useState<LandingThemeDb | null>(null);
 
+  // Disable main page (body) scroll only on this page to avoid weird UI from double scroll.
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
   // Set preview id after mount so server and client render the same initial value (avoids hydration mismatch).
   useEffect(() => {
     if (previewQRId === "") setPreviewQRId(generateQRId());
@@ -220,10 +229,10 @@ function CreateQRPageContent() {
         toast.success("QR code updated.");
         router.push(`/dashboard/my-qr/${editingId}`);
       } else {
-        await qrsApi.create({ ...body, status: "active" });
+        const { qr } = await qrsApi.create({ ...body, status: "active" });
         reset();
         toast.success("QR code created.");
-        router.push("/dashboard/my-qrs");
+        router.push(`/dashboard/my-qr/${qr.id}`);
       }
     } catch (err: unknown) {
       const msg =

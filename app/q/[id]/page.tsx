@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { recordScan } from "@/lib/db/analytics";
 import { getQRById } from "@/lib/db/qrs";
 import { resolveQRScan } from "@/lib/qr/qr-types";
+import { QRDisabledFallback } from "@/components/qr/QRDisabledFallback";
 import { QRScanLanding } from "@/components/qr/QRScanLanding";
 
 type SmartRedirectUrls = { ios?: string; android?: string; fallback?: string };
@@ -29,6 +30,10 @@ export default async function ScanPage({ params }: Props) {
   const qr = await getQRById(id);
   if (!qr) {
     notFound();
+  }
+
+  if (qr.status !== "active") {
+    return <QRDisabledFallback />;
   }
 
   if (qr.analyticsEnabled) {

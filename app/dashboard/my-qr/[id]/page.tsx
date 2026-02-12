@@ -6,9 +6,13 @@ import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   BarChart3,
+  Check,
+  Copy,
+  ChevronDown,
   ExternalLink,
   Loader2,
   Pencil,
+  ShieldOff,
   Trash2,
 } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -22,11 +26,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { qrsApi, type QRListItem } from "@/lib/api";
 import { toast } from "@/lib/toast";
-import type { QRTemplateId, QRStyle } from "@/lib/qr";
+import { getCardBaseUrl, type QRTemplateId, type QRStyle } from "@/lib/qr";
 import { cn } from "@/lib/utils";
 
 function formatContentType(type: string): string {
@@ -66,6 +76,8 @@ export default function MyQRDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [urlCopied, setUrlCopied] = useState(false);
+  const [statusUpdating, setStatusUpdating] = useState(false);
 
   const fetchQr = useCallback(() => {
     if (!id) {
@@ -108,6 +120,27 @@ export default function MyQRDetailPage() {
           ?.error ?? "Failed to delete. Try again.";
       toast.error(msg);
       setDeleting(false);
+    }
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!id || !qr) return;
+    setStatusUpdating(true);
+    try {
+      const updated = await qrsApi.update(id, { status: newStatus });
+      setQr(updated);
+      toast.success(
+        newStatus === "active"
+          ? "QR code is now active. Scans will work."
+          : "QR code disabled. Scans will see a disabled message."
+      );
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data
+          ?.error ?? "Failed to update status. Try again.";
+      toast.error(msg);
+    } finally {
+      setStatusUpdating(false);
     }
   };
 
@@ -179,8 +212,6 @@ export default function MyQRDetailPage() {
                     <span className="inline-flex rounded-full bg-muted/80 px-2.5 py-0.5 font-medium text-foreground/90">
                       {formatContentType(qr.contentType)}
                     </span>
-                    <span>{qr.scanCount ?? 0} scans</span>
-                    <span>Created {formatDate(qr.createdAt)}</span>
                     {qr.analyticsEnabled && (
                       <span className="inline-flex items-center gap-1">
                         <BarChart3 className="size-3.5" />
@@ -217,8 +248,20 @@ export default function MyQRDetailPage() {
                 </div>
               </div>
 
+              {qr.status !== "active" && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
+                  <span className="font-medium">This QR is disabled.</span>{" "}
+                  People who scan it will see a message that the code is disabled. Enable it again in the Status section below.
+                </div>
+              )}
+
               {/* QR + details card */}
-              <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+              <div
+                className={cn(
+                  "rounded-2xl border border-border bg-card shadow-sm overflow-hidden",
+                  qr.status !== "active" && "opacity-90"
+                )}
+              >
                 <div className="grid gap-6 p-6 sm:grid-cols-[auto_1fr]">
                   <div className="flex shrink-0 justify-center rounded-xl border border-border bg-muted/20 p-4">
                     <QRCodePreview
@@ -248,13 +291,87 @@ export default function MyQRDetailPage() {
                       <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                         Scan URL
                       </h3>
-                      <p className="mt-1 break-all font-mono text-xs text-muted-foreground">
-                        {qr.payload || "—"}
-                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        <span className="break-all font-mono text-xs text-muted-foreground">
+                          {qr.payload || "—"}
+                        </span>
+                        {qr.payload && qr.payload !== "—" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={cn(
+                              "inline-flex h-7 w-7 shrink-0 hover:text-foreground",
+                              urlCopied ? "text-green-500" : "text-muted-foreground"
+                            )}
+                            onClick={() => {
+                              const url = qr.payload.startsWith("http")
+                                ? qr.payload
+                                : `${getCardBaseUrl()}${qr.payload.startsWith("/") ? "" : "/"}${qr.payload}`;
+                              void navigator.clipboard.writeText(url);
+                              setUrlCopied(true);
+                              toast.success("Scan URL copied to clipboard");
+                              setTimeout(() => setUrlCopied(false), 2000);
+                            }}
+                          >
+                            {urlCopied ? (
+                              <Check className="size-3.5" />
+                            ) : (
+                              <Copy className="size-3.5" />
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
-                      <span>Status: {qr.status}</span>
-                      <span>Updated {formatDate(qr.updatedAt)}</span>
+                    <div>
+                      <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Status
+                      </h3>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-2"
+                              disabled={statusUpdating}
+                            >
+                              {statusUpdating ? (
+                                <Loader2 className="size-4 animate-spin" />
+                              ) : qr.status === "active" ? (
+                                <>
+                                  <span className="inline-flex size-2 rounded-full bg-emerald-500" />
+                                  Active
+                                </>
+                              ) : (
+                                <>
+                                  <ShieldOff className="size-4" />
+                                  {qr.status === "disabled" ? "Disabled" : qr.status}
+                                </>
+                              )}
+                              <ChevronDown className="size-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            <DropdownMenuItem
+                              onClick={() => handleStatusChange("active")}
+                              disabled={qr.status === "active"}
+                            >
+                              {qr.status === "active" && <Check className="size-4" />}
+                              Active — scans work
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleStatusChange("disabled")}
+                              disabled={qr.status === "disabled"}
+                            >
+                              {qr.status === "disabled" && <Check className="size-4" />}
+                              Disabled — scans see disabled message
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <span className="text-sm text-muted-foreground">
+                          Updated {formatDate(qr.updatedAt)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>

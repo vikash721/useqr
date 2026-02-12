@@ -98,13 +98,23 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "QR not found" }, { status: 404 });
     }
 
-    const contentType = parsed.data.contentType ?? existing.contentType;
-    const content = parsed.data.content ?? existing.content;
-    const message = parsed.data.message;
-    const baseUrl = getCardBaseUrl();
-    const payload = buildQRData(contentType, content, { baseUrl, qrId: id, message });
+    const isContentChange =
+      parsed.data.contentType !== undefined ||
+      parsed.data.content !== undefined ||
+      parsed.data.message !== undefined;
 
-    const update: QRUpdateInput = { ...parsed.data, payload };
+    let update: QRUpdateInput;
+    if (isContentChange) {
+      const contentType = parsed.data.contentType ?? existing.contentType;
+      const content = parsed.data.content ?? existing.content;
+      const message = parsed.data.message;
+      const baseUrl = getCardBaseUrl();
+      const payload = buildQRData(contentType, content, { baseUrl, qrId: id, message });
+      update = { ...parsed.data, payload };
+    } else {
+      update = { ...parsed.data };
+    }
+
     const doc = await updateQR(id, user.id, update);
     if (!doc) {
       return NextResponse.json({ error: "QR not found" }, { status: 404 });
