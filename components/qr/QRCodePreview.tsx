@@ -2,15 +2,17 @@
 
 import { useMemo } from "react";
 import { QrCode } from "lucide-react";
-import { buildQRData, getCardBaseUrl, type QRTemplateId, type QRContentType } from "@/lib/qr";
+import { buildQRData, getCardBaseUrl, type QRTemplateId, type QRContentType, type QRStyle } from "@/lib/qr";
 import { useQRCodeImage } from "@/hooks/useQRCodeImage";
 import { cn } from "@/lib/utils";
 
 export interface QRCodePreviewProps {
   /** QR id — used to build the scan URL encoded in the QR (e.g. /q/{qrId}) */
   qrId: string | null;
-  /** Template design (classic, rounded, dots, etc.) */
+  /** Template design (classic, rounded, dots, etc.) — used when style is not provided */
   templateId: QRTemplateId;
+  /** Full QR style (colors, logo, shapes). When set, overrides template for rendering. */
+  style?: QRStyle | null;
   /** Content type for payload (when not using card URL) */
   contentType?: QRContentType;
   /** Raw content — used when contentType is set and no card URL is used */
@@ -30,6 +32,7 @@ export interface QRCodePreviewProps {
 export function QRCodePreview({
   qrId,
   templateId,
+  style,
   contentType,
   content = "",
   size = 192,
@@ -49,7 +52,7 @@ export function QRCodePreview({
     return "";
   }, [qrId, contentType, content]);
 
-  const { dataUrl, error, isLoading } = useQRCodeImage(data, templateId, size);
+  const { dataUrl, error, isLoading } = useQRCodeImage(data, templateId, size, style);
 
   if (error) {
     return (
@@ -83,6 +86,7 @@ export function QRCodePreview({
   }
 
   return (
+    // eslint-disable-next-line @next/next/no-img-element -- QR is a dynamic blob URL from canvas
     <img
       src={dataUrl}
       alt="QR code preview"

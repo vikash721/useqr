@@ -45,6 +45,7 @@ export async function createQR(input: CreateQRInput): Promise<QRDocument> {
     createdAt: now,
     updatedAt: now,
     ...(input.metadata && Object.keys(input.metadata).length > 0 ? { metadata: input.metadata } : {}),
+    ...(input.style && Object.keys(input.style).length > 0 ? { style: input.style } : {}),
   };
   await coll.insertOne(doc);
   return doc;

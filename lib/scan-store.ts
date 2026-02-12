@@ -25,7 +25,7 @@ export function recordScan(qrId: string): void {
     listeners.forEach((cb) => {
       try {
         cb(payload);
-      } catch (_) {}
+      } catch {}
     });
     scanListeners.delete(qrId);
   }

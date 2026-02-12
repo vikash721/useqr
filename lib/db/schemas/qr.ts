@@ -31,6 +31,29 @@ export const qrTemplateSchema = z.enum([
 ]);
 export type QRTemplateDb = z.infer<typeof qrTemplateSchema>;
 
+/** Optional logo in center of QR (stored in style.logo) */
+export const qrLogoOptionsSchema = z.object({
+  url: z.string().url().max(2048),
+  size: z.number().min(0.2).max(0.5).optional(),
+  hideBackgroundDots: z.boolean().optional(),
+});
+export type QRLogoOptionsDb = z.infer<typeof qrLogoOptionsSchema>;
+
+/** Full QR style — colors, shapes, logo (optional; when absent use template only) */
+export const qrStyleSchema = z.object({
+  template: qrTemplateSchema.optional(),
+  fgColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  bgColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  dotType: z.enum(["square", "rounded", "dots", "classy", "classy-rounded", "extra-rounded"]).optional(),
+  cornerSquareType: z.enum(["square", "dot", "extra-rounded", "rounded", "dots", "classy", "classy-rounded"]).optional(),
+  cornerDotType: z.enum(["square", "dot", "rounded", "dots", "classy", "classy-rounded", "extra-rounded"]).optional(),
+  logo: qrLogoOptionsSchema.optional(),
+  margin: z.number().int().min(0).max(32).optional(),
+  errorCorrectionLevel: z.enum(["L", "M", "Q", "H"]).optional(),
+  shape: z.enum(["square", "circle"]).optional(),
+}).strict();
+export type QRStyleDb = z.infer<typeof qrStyleSchema>;
+
 /** Landing page theme when someone scans the QR (e.g. default, minimal, card, full). */
 export const landingThemeSchema = z.enum([
   "default",
@@ -52,6 +75,8 @@ export const qrDocumentSchema = z.object({
   content: z.string(),
   payload: z.string(),
   template: qrTemplateSchema.default("classic"),
+  /** Full QR style (colors, logo, shapes). When absent, use template only. */
+  style: qrStyleSchema.optional(),
   landingTheme: landingThemeSchema.default("default"),
   analyticsEnabled: z.boolean().default(true),
   status: qrStatusSchema.default("active"),
@@ -73,6 +98,7 @@ export const qrCreateBodySchema = z.object({
   /** Optional metadata (e.g. smartRedirect: { ios, android, fallback }). */
   metadata: z.record(z.string(), z.unknown()).optional(),
   template: qrTemplateSchema.default("classic"),
+  style: qrStyleSchema.optional(),
   landingTheme: landingThemeSchema.default("default"),
   analyticsEnabled: z.boolean().default(true),
   status: qrStatusSchema.default("active"),
@@ -88,6 +114,7 @@ export const qrUpdateBodySchema = z.object({
   message: z.string().max(1000).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
   template: qrTemplateSchema.optional(),
+  style: qrStyleSchema.optional(),
   landingTheme: landingThemeSchema.optional(),
   analyticsEnabled: z.boolean().optional(),
   status: qrStatusSchema.optional(),

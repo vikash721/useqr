@@ -41,7 +41,7 @@ api.interceptors.response.use(
       if (start) {
         const ms = Date.now() - start;
         if (ms > 1000) {
-          // eslint-disable-next-line no-console
+           
           console.warn(`[api] slow ${res.config.method?.toUpperCase()} ${res.config.url} (${ms}ms)`);
         }
       }

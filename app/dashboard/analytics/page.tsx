@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BarChart3, Loader2, QrCode } from "lucide-react";
+import { BarChart3, QrCode } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { qrsApi, type QRListItem } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
 
 function formatContentType(type: string): string {
   const map: Record<string, string> = {

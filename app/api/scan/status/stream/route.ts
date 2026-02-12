@@ -19,12 +19,12 @@ export async function GET(request: Request) {
       const send = (data: object) => {
         try {
           controller.enqueue(encoder.encode(sseMessage(data)));
-        } catch (_) {}
+        } catch {}
       };
       const close = () => {
         try {
           controller.close();
-        } catch (_) {}
+        } catch {}
       };
 
       const status = getScanStatus(qrId!);

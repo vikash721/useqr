@@ -47,6 +47,7 @@ export async function GET(_request: Request, context: RouteContext) {
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
         ...(doc.metadata ? { metadata: doc.metadata } : {}),
+        ...(doc.style ? { style: doc.style } : {}),
       },
     });
   } catch (err) {
@@ -125,6 +126,7 @@ export async function PATCH(request: Request, context: RouteContext) {
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
         ...(doc.metadata ? { metadata: doc.metadata } : {}),
+        ...(doc.style ? { style: doc.style } : {}),
       },
     });
   } catch (err) {

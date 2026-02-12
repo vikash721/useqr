@@ -5,12 +5,10 @@ import Link from "next/link";
 import {
   Grid2X2,
   List,
-  Loader2,
   QrCode,
   Search,
   SlidersHorizontal,
   Plus,
-  ExternalLink,
   Eye,
 } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -18,7 +16,7 @@ import { QRCodePreview } from "@/components/qr/QRCodePreview";
 import { qrsApi, type QRListItem } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import type { QRTemplateId } from "@/lib/qr";
+import type { QRTemplateId, QRStyle } from "@/lib/qr";
 
 function formatContentType(type: string): string {
   const map: Record<string, string> = {
@@ -236,6 +234,7 @@ export default function MyQRsPage() {
                     <QRCodePreview
                       qrId={qr.id}
                       templateId={(qr.template || "classic") as QRTemplateId}
+                      style={(qr.style ?? undefined) as QRStyle | undefined}
                       size={view === "grid" ? 128 : 80}
                       compact
                       className="shrink-0"

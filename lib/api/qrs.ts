@@ -4,6 +4,20 @@ import { api } from "@/lib/axios";
 // Types (match API response shapes)
 // ---------------------------------------------------------------------------
 
+/** QR style (colors, logo, shapes) — matches QRStyle from lib/qr */
+export type QRListItemStyle = {
+  template?: string;
+  fgColor?: string;
+  bgColor?: string;
+  dotType?: string;
+  cornerSquareType?: string;
+  cornerDotType?: string;
+  logo?: { url: string; size?: number; hideBackgroundDots?: boolean };
+  margin?: number;
+  errorCorrectionLevel?: "L" | "M" | "Q" | "H";
+  shape?: "square" | "circle";
+};
+
 export type QRListItem = {
   id: string;
   name: string;
@@ -11,6 +25,7 @@ export type QRListItem = {
   content: string;
   payload: string;
   template: string;
+  style?: QRListItemStyle;
   landingTheme?: string;
   analyticsEnabled: boolean;
   status: string;
@@ -43,11 +58,11 @@ export type QRCreateBody = {
   name?: string;
   contentType: string;
   content: string;
-  /** Optional message for SMS (body) or WhatsApp (pre-filled text). */
   message?: string;
-  /** Optional metadata (e.g. smartRedirect for smart redirect type). */
   metadata?: { smartRedirect?: { ios?: string; android?: string; fallback?: string } };
   template?: string;
+  /** Full QR style (colors, logo, shapes). */
+  style?: QRListItemStyle;
   landingTheme?: string;
   analyticsEnabled?: boolean;
   status?: string;
@@ -60,6 +75,7 @@ export type QRUpdateBody = {
   message?: string;
   metadata?: { smartRedirect?: { ios?: string; android?: string; fallback?: string } };
   template?: string;
+  style?: QRListItemStyle;
   landingTheme?: string;
   analyticsEnabled?: boolean;
   status?: string;

@@ -7,6 +7,7 @@ import type { QRTemplateId } from "@/lib/qr";
 import type { QRContentType } from "@/lib/qr/payload";
 import type { LandingThemeDb } from "@/lib/db/schemas/qr";
 import { DEFAULT_LANDING_THEME } from "@/lib/qr/landing-theme";
+import type { QRStyle } from "@/lib/qr/qr-style";
 import { parseDialFromFullNumber } from "@/lib/countries";
 
 export type CreateQRState = {
@@ -32,6 +33,8 @@ export type CreateQRState = {
   smartRedirectFallback: string;
   /** Template design (classic, rounded, dots, etc.) */
   selectedTemplate: QRTemplateId;
+  /** Full QR style overrides (colors, logo, shapes). Merged with template for rendering. */
+  qrStyle: Partial<QRStyle>;
   /** Landing page theme when someone scans the QR */
   landingTheme: LandingThemeDb;
   /** Whether to track scans and show analytics for this QR */
@@ -44,6 +47,7 @@ export type QRLoadForEdit = {
   contentType: string;
   content: string;
   template?: string;
+  style?: Partial<QRStyle>;
   landingTheme?: string;
   metadata?: { message?: string; smartRedirect?: { ios?: string; android?: string; fallback?: string } };
   analyticsEnabled?: boolean;
@@ -59,6 +63,10 @@ export type CreateQRActions = {
   setSmartRedirectAndroid: (url: string) => void;
   setSmartRedirectFallback: (url: string) => void;
   setSelectedTemplate: (template: QRTemplateId) => void;
+  /** Merge style overrides (colors, logo, shapes). Pass partial updates. */
+  setQRStyle: (updates: Partial<QRStyle>) => void;
+  /** Reset QR style to template only (clear custom colors/logo). */
+  resetQRStyle: () => void;
   setLandingTheme: (theme: LandingThemeDb) => void;
   setAnalyticsEnabled: (enabled: boolean) => void;
   /** Load existing QR data for edit mode (prefill form and set editingId). */
@@ -79,6 +87,7 @@ const initialState: CreateQRState = {
   smartRedirectAndroid: "",
   smartRedirectFallback: "",
   selectedTemplate: "classic",
+  qrStyle: {},
   landingTheme: DEFAULT_LANDING_THEME,
   analyticsEnabled: true,
 };
@@ -102,7 +111,9 @@ export const useCreateQRStore = create<CreateQRState & CreateQRActions>()(
       setSmartRedirectIos: (smartRedirectIos) => set({ smartRedirectIos }),
       setSmartRedirectAndroid: (smartRedirectAndroid) => set({ smartRedirectAndroid }),
       setSmartRedirectFallback: (smartRedirectFallback) => set({ smartRedirectFallback }),
-      setSelectedTemplate: (selectedTemplate) => set({ selectedTemplate }),
+      setSelectedTemplate: (selectedTemplate) => set((s) => ({ selectedTemplate, qrStyle: { ...s.qrStyle, template: selectedTemplate } })),
+      setQRStyle: (updates) => set((s) => ({ qrStyle: { ...s.qrStyle, ...updates } })),
+      resetQRStyle: () => set({ qrStyle: {} }),
       setLandingTheme: (landingTheme) => set({ landingTheme }),
       setAnalyticsEnabled: (analyticsEnabled) => set({ analyticsEnabled }),
       loadForEdit: (qr) => {
@@ -137,6 +148,7 @@ export const useCreateQRStore = create<CreateQRState & CreateQRActions>()(
           smartRedirectAndroid: smartRedirect?.android ?? "",
           smartRedirectFallback: smartRedirect?.fallback ?? content ?? "",
           selectedTemplate: (qr.template as QRTemplateId) ?? "classic",
+          qrStyle: (qr.style as Partial<QRStyle>) ?? {},
           landingTheme: (qr.landingTheme as LandingThemeDb) ?? DEFAULT_LANDING_THEME,
           analyticsEnabled: qr.analyticsEnabled ?? true,
         });
@@ -155,6 +167,7 @@ export const useCreateQRStore = create<CreateQRState & CreateQRActions>()(
         smartRedirectAndroid: s.smartRedirectAndroid,
         smartRedirectFallback: s.smartRedirectFallback,
         selectedTemplate: s.selectedTemplate,
+        qrStyle: s.qrStyle,
         landingTheme: s.landingTheme,
         analyticsEnabled: s.analyticsEnabled,
       }),

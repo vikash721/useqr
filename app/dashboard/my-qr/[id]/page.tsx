@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { qrsApi, type QRListItem } from "@/lib/api";
 import { toast } from "@/lib/toast";
-import type { QRTemplateId } from "@/lib/qr";
+import type { QRTemplateId, QRStyle } from "@/lib/qr";
 import { cn } from "@/lib/utils";
 
 function formatContentType(type: string): string {
@@ -224,6 +224,7 @@ export default function MyQRDetailPage() {
                     <QRCodePreview
                       qrId={qr.id}
                       templateId={(qr.template || "classic") as QRTemplateId}
+                      style={(qr.style ?? undefined) as QRStyle | undefined}
                       size={200}
                       compact
                       className="shrink-0"

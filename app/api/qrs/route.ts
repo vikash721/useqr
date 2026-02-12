@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { name, contentType, content, message, metadata: bodyMetadata, template, landingTheme, analyticsEnabled, status } =
+  const { name, contentType, content, message, metadata: bodyMetadata, template, style, landingTheme, analyticsEnabled, status } =
     parsed.data;
 
   const baseUrl = getCardBaseUrl();
@@ -64,6 +64,7 @@ export async function POST(request: Request) {
       analyticsEnabled,
       status,
       ...(metadata ? { metadata } : {}),
+      ...(style && Object.keys(style).length > 0 ? { style } : {}),
     });
 
     return NextResponse.json({
@@ -82,6 +83,7 @@ export async function POST(request: Request) {
         createdAt: doc.createdAt.toISOString(),
         updatedAt: doc.updatedAt.toISOString(),
         ...(doc.metadata ? { metadata: doc.metadata } : {}),
+        ...(doc.style ? { style: doc.style } : {}),
       },
     });
   } catch (err) {
@@ -124,6 +126,7 @@ export async function GET(request: Request) {
       content: doc.content,
       payload: doc.payload,
       template: doc.template,
+      style: doc.style,
       landingTheme: doc.landingTheme ?? "default",
       analyticsEnabled: doc.analyticsEnabled,
       status: doc.status,

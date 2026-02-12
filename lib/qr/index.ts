@@ -14,3 +14,9 @@ export { getQRStylingOptions } from "./options";
 export type { QRStylingOptions } from "./options";
 export { buildQRData, getCardBaseUrl } from "./payload";
 export type { QRContentType } from "./payload";
+export {
+  getQRStylingOptionsFromStyle,
+  normalizeQRStyle,
+  DEFAULT_QR_STYLE,
+} from "./qr-style";
+export type { QRStyle, QRLogoOptions, QRDotType, QRCornerSquareType, QRCornerDotType } from "./qr-style";

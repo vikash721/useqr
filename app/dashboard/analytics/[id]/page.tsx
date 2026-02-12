@@ -19,7 +19,6 @@ import {
   CalendarRange,
   Check,
   ChevronDown,
-  Loader2,
   QrCode,
   ScanLine,
 } from "lucide-react";

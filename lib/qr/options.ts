@@ -17,6 +17,9 @@ export interface QRStylingOptions {
   data: string;
   margin: number;
   type: "canvas" | "svg";
+  /** Center logo image URL (when using logo) */
+  image?: string;
+  shape?: "square" | "circle";
   qrOptions?: { errorCorrectionLevel?: "L" | "M" | "Q" | "H" };
   backgroundOptions?: { color: string };
   dotsOptions?: {

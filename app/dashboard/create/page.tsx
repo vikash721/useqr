@@ -42,6 +42,8 @@ import {
 } from "@/components/ui/dialog";
 import { CountryCodeSelect } from "@/components/CountryCodeSelect";
 import { normalizePhoneDigits } from "@/lib/countries";
+import { getCardBaseUrl, QR_DEFAULT_FG, QR_DEFAULT_BG } from "@/lib/qr";
+import type { QRDotType, QRCornerSquareType, QRCornerDotType } from "@/lib/qr";
 import { cn } from "@/lib/utils";
 import type { LandingThemeDb } from "@/lib/db/schemas/qr";
 
@@ -70,8 +72,6 @@ const QR_TYPES = [
   { id: "whatsapp" as const, label: "WhatsApp", description: "Start a chat with a number", icon: MessageCircle, contentLabel: "Phone number (with country code)", contentPlaceholder: "+1234567890" },
 ] as const;
 
-type QRType = (typeof QR_TYPES)[number]["id"];
-
 const QR_TEMPLATES = [
   { id: "classic" as const, label: "Classic", description: "Standard square modules", style: "squares" },
   { id: "rounded" as const, label: "Rounded", description: "Soft rounded corners", style: "rounded" },
@@ -79,8 +79,6 @@ const QR_TEMPLATES = [
   { id: "minimal" as const, label: "Minimal", description: "Thin lines, clean look", style: "minimal" },
   { id: "branded" as const, label: "Branded", description: "Center space for logo", style: "branded" },
 ] as const;
-
-type QRTemplateId = (typeof QR_TEMPLATES)[number]["id"];
 
 const QR_PREVIEW_PATTERN = [1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1];
 
@@ -143,6 +141,9 @@ function CreateQRPageContent() {
   const setSmartRedirectAndroid = useCreateQRStore((s) => s.setSmartRedirectAndroid);
   const setSmartRedirectFallback = useCreateQRStore((s) => s.setSmartRedirectFallback);
   const setSelectedTemplate = useCreateQRStore((s) => s.setSelectedTemplate);
+  const qrStyle = useCreateQRStore((s) => s.qrStyle);
+  const setQRStyle = useCreateQRStore((s) => s.setQRStyle);
+  const resetQRStyle = useCreateQRStore((s) => s.resetQRStyle);
   const setLandingTheme = useCreateQRStore((s) => s.setLandingTheme);
   const setAnalyticsEnabled = useCreateQRStore((s) => s.setAnalyticsEnabled);
   const loadForEdit = useCreateQRStore((s) => s.loadForEdit);
@@ -169,7 +170,7 @@ function CreateQRPageContent() {
     qrsApi
       .get(editId)
       .then((qr) => {
-        if (!cancelled) loadForEdit(qr);
+        if (!cancelled) loadForEdit({ ...qr, style: qr.style as import("@/lib/qr").QRStyle | undefined });
       })
       .catch((err) => {
         if (!cancelled) {
@@ -239,6 +240,11 @@ function CreateQRPageContent() {
             },
           }
         : {};
+    const effectiveStyle =
+      Object.keys(qrStyle).length > 0
+        ? { template: selectedTemplate, ...qrStyle }
+        : undefined;
+
     try {
       const body = {
         name: name?.trim() || undefined,
@@ -247,6 +253,7 @@ function CreateQRPageContent() {
         ...(isSmsOrWhatsApp && phoneMessage.trim() ? { message: phoneMessage.trim() } : {}),
         ...smartRedirectMeta,
         template: selectedTemplate,
+        ...(effectiveStyle ? { style: effectiveStyle } : {}),
         landingTheme,
         analyticsEnabled,
         ...(editingId ? {} : { status: "active" as const }),
@@ -631,6 +638,203 @@ function CreateQRPageContent() {
                     );
                   })}
                 </div>
+
+                {/* Customize QR — colors, shapes, logo */}
+                <section
+                  className="rounded-xl border border-border bg-card p-6 shadow-sm ring-1 ring-border/50"
+                  aria-labelledby="qr-customize-heading"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <h2
+                      id="qr-customize-heading"
+                      className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-foreground"
+                    >
+                      <span className="flex size-7 items-center justify-center rounded-md bg-emerald-500/15 text-emerald-500">
+                        •
+                      </span>
+                      Customize QR
+                    </h2>
+                    {(qrStyle.fgColor ?? qrStyle.bgColor ?? qrStyle.logo?.url ?? qrStyle.dotType) != null && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-muted-foreground"
+                        onClick={() => resetQRStyle()}
+                      >
+                        Reset to template
+                      </Button>
+                    )}
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Optional: set colors, dot shape, and add a center logo. Preview updates live.
+                  </p>
+                  <div className="mt-4 grid gap-6 sm:grid-cols-2">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="mb-1.5 block text-xs font-medium text-foreground">Colors</label>
+                        <div className="flex gap-3">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[10px] text-muted-foreground">Dots</span>
+                            <div className="flex gap-1.5">
+                              <input
+                                type="color"
+                                value={qrStyle.fgColor ?? QR_DEFAULT_FG}
+                                onChange={(e) => setQRStyle({ fgColor: e.target.value })}
+                                className="h-9 w-12 cursor-pointer rounded border border-border bg-background p-0.5"
+                              />
+                              <Input
+                                type="text"
+                                value={qrStyle.fgColor ?? ""}
+                                onChange={(e) => setQRStyle({ fgColor: e.target.value || undefined })}
+                                placeholder={QR_DEFAULT_FG}
+                                className="font-mono text-xs"
+                                maxLength={7}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[10px] text-muted-foreground">Background</span>
+                            <div className="flex gap-1.5">
+                              <input
+                                type="color"
+                                value={qrStyle.bgColor ?? QR_DEFAULT_BG}
+                                onChange={(e) => setQRStyle({ bgColor: e.target.value })}
+                                className="h-9 w-12 cursor-pointer rounded border border-border bg-background p-0.5"
+                              />
+                              <Input
+                                type="text"
+                                value={qrStyle.bgColor ?? ""}
+                                onChange={(e) => setQRStyle({ bgColor: e.target.value || undefined })}
+                                placeholder={QR_DEFAULT_BG}
+                                className="font-mono text-xs"
+                                maxLength={7}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-xs font-medium text-foreground">Shapes</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <span className="text-[10px] text-muted-foreground">Dots</span>
+                            <select
+                              value={qrStyle.dotType ?? ""}
+                              onChange={(e) => setQRStyle({ dotType: (e.target.value || undefined) as QRDotType | undefined })}
+                              className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+                            >
+                              <option value="">Template default</option>
+                              <option value="square">Square</option>
+                              <option value="rounded">Rounded</option>
+                              <option value="dots">Dots</option>
+                              <option value="classy">Classy</option>
+                              <option value="classy-rounded">Classy rounded</option>
+                              <option value="extra-rounded">Extra rounded</option>
+                            </select>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-muted-foreground">Corner square</span>
+                            <select
+                              value={qrStyle.cornerSquareType ?? ""}
+                              onChange={(e) => setQRStyle({ cornerSquareType: (e.target.value || undefined) as QRCornerSquareType | undefined })}
+                              className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+                            >
+                              <option value="">Template default</option>
+                              <option value="square">Square</option>
+                              <option value="dot">Dot</option>
+                              <option value="extra-rounded">Extra rounded</option>
+                              <option value="rounded">Rounded</option>
+                              <option value="dots">Dots</option>
+                              <option value="classy">Classy</option>
+                              <option value="classy-rounded">Classy rounded</option>
+                            </select>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-muted-foreground">Corner dot</span>
+                            <select
+                              value={qrStyle.cornerDotType ?? ""}
+                              onChange={(e) => setQRStyle({ cornerDotType: (e.target.value || undefined) as QRCornerDotType | undefined })}
+                              className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+                            >
+                              <option value="">Template default</option>
+                              <option value="square">Square</option>
+                              <option value="dot">Dot</option>
+                              <option value="rounded">Rounded</option>
+                              <option value="dots">Dots</option>
+                              <option value="classy">Classy</option>
+                              <option value="classy-rounded">Classy rounded</option>
+                              <option value="extra-rounded">Extra rounded</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="mb-1.5 block text-xs font-medium text-foreground">Center logo</label>
+                        <Input
+                          type="url"
+                          placeholder="https://example.com/logo.png"
+                          value={qrStyle.logo?.url ?? ""}
+                          onChange={(e) =>
+                            setQRStyle({
+                              logo: e.target.value.trim()
+                                ? { url: e.target.value.trim(), size: qrStyle.logo?.size ?? 0.4, hideBackgroundDots: qrStyle.logo?.hideBackgroundDots ?? true }
+                                : undefined,
+                            })
+                          }
+                          className="text-xs"
+                        />
+                        <p className="mt-1 text-[10px] text-muted-foreground">
+                          Public image URL. Use high contrast; QR uses H error correction when logo is set.
+                        </p>
+                        {qrStyle.logo?.url && (
+                          <div className="mt-2 flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-muted-foreground">Size</span>
+                              <input
+                                type="range"
+                                min={0.2}
+                                max={0.5}
+                                step={0.05}
+                                value={qrStyle.logo?.size ?? 0.4}
+                                onChange={(e) =>
+                                  setQRStyle({
+                                    logo: {
+                                      ...qrStyle.logo!,
+                                      size: parseFloat(e.target.value),
+                                    },
+                                  })
+                                }
+                                className="w-24"
+                              />
+                              <span className="text-[10px] text-muted-foreground">
+                                {Math.round((qrStyle.logo?.size ?? 0.4) * 100)}%
+                              </span>
+                            </div>
+                            <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <input
+                                type="checkbox"
+                                checked={qrStyle.logo?.hideBackgroundDots ?? true}
+                                onChange={(e) =>
+                                  setQRStyle({
+                                    logo: {
+                                      ...qrStyle.logo!,
+                                      hideBackgroundDots: e.target.checked,
+                                    },
+                                  })
+                                }
+                                className="rounded border-border"
+                              />
+                              Hide dots behind logo
+                            </label>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </section>
               </section>
 
               {/* Step 4: Landing page theme (only when scan shows a landing page; URL redirects) */}
@@ -871,23 +1075,53 @@ function CreateQRPageContent() {
 
             {/* Right: Live preview — sticky so it stays in view when scrolling */}
             <aside className="lg:sticky lg:top-8 lg:self-start">
-              <div className="rounded-xl border border-border bg-card p-6 shadow-sm ring-1 ring-border/50">
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                  Preview
-                </h3>
-                <div className="mt-4 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/30 p-6">
-                  <QRCodePreview
-                    qrId={previewQRId}
-                    templateId={selectedTemplate}
-                    size={200}
-                    className="shrink-0"
-                  />
-                  <p className="mt-3 text-center text-sm text-muted-foreground">
-                    Live preview — scans to <span className="font-mono text-xs">/q/{previewQRId}</span>
-                  </p>
-                  <p className="mt-1 text-center text-xs text-muted-foreground">
-                    Change type or template to update the QR.
-                  </p>
+              <div className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-lg shadow-black/5 dark:shadow-black/20">
+                <div className="border-b border-border/60 bg-muted/30 px-5 py-3.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-sm font-semibold text-foreground">
+                      {isEditMode ? "QR preview" : "Preview"}
+                    </h3>
+                    {isEditMode ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                        <span className="size-1.5 rounded-full bg-emerald-500" />
+                        Live
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                        Not live yet
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="flex flex-col items-center">
+                    <div className="rounded-xl bg-white p-5 shadow-inner dark:bg-zinc-900/80 dark:shadow-none ring-1 ring-black/5 dark:ring-white/10">
+                      <QRCodePreview
+                        qrId={previewQRId}
+                        templateId={selectedTemplate}
+                        style={
+                          Object.keys(qrStyle).length > 0
+                            ? { template: selectedTemplate, ...qrStyle }
+                            : undefined
+                        }
+                        size={200}
+                        className="shrink-0"
+                      />
+                    </div>
+                    <div className="mt-4 w-full space-y-2 text-center">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Link encoded in QR
+                      </p>
+                      <code className="block truncate rounded-md bg-muted/80 px-3 py-1.5 font-mono text-[11px] text-foreground" title="Full scan link">
+                        {getCardBaseUrl().replace(/\/$/, "")}/q/{previewQRId}
+                      </code>
+                      <p className="text-[11px] text-muted-foreground/90">
+                        {isEditMode
+                          ? "This QR is live — scans work now. Save to apply changes."
+                          : "Create your QR to publish — then this link will go live."}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </aside>
