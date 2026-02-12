@@ -43,7 +43,13 @@ import {
 } from "@/components/ui/dialog";
 import { CountryCodeSelect } from "@/components/CountryCodeSelect";
 import { normalizePhoneDigits } from "@/lib/countries";
-import { getCardBaseUrl, generateQRId } from "@/lib/qr";
+import {
+  buildVCard,
+  buildWifiString,
+  buildEventString,
+  getCardBaseUrl,
+  generateQRId,
+} from "@/lib/qr";
 import { cn } from "@/lib/utils";
 import type { LandingThemeDb } from "@/lib/db/schemas/qr";
 
@@ -61,14 +67,14 @@ function hasLandingPage(contentType: string | null): boolean {
 const QR_TYPES = [
   { id: "url" as const, label: "URL / Link", description: "Website, landing page, or any link", icon: Link2, contentLabel: "URL or link", contentPlaceholder: "https://example.com" },
   { id: "smart_redirect" as const, label: "Smart redirect", description: "Redirect by device — App Store, Play Store, or fallback", icon: Smartphone, contentLabel: "Redirect URLs", contentPlaceholder: "" },
-  { id: "vcard" as const, label: "vCard", description: "Contact card — name, phone, email", icon: User, contentLabel: "Contact details", contentPlaceholder: "Name, phone, email (coming soon)" },
-  { id: "wifi" as const, label: "Wi‑Fi", description: "Network name and password", icon: Wifi, contentLabel: "Wi‑Fi details", contentPlaceholder: "Network name, password (coming soon)" },
+  { id: "vcard" as const, label: "vCard", description: "Contact card — name, phone, email. Great for lost & found.", icon: User, contentLabel: "Contact details", contentPlaceholder: "Name, phone, email", tag: "Lost & found" },
+  { id: "wifi" as const, label: "Wi‑Fi", description: "Network name and password", icon: Wifi, contentLabel: "Wi‑Fi details", contentPlaceholder: "Network name, password" },
   { id: "text" as const, label: "Plain text", description: "Short message or note", icon: FileText, contentLabel: "Your message", contentPlaceholder: "Enter your text..." },
-  { id: "email" as const, label: "Email", description: "Pre-filled email (to, subject, body)", icon: Mail, contentLabel: "Email details", contentPlaceholder: "To, subject, body (coming soon)" },
+  { id: "email" as const, label: "Email", description: "Pre-filled email (to, subject, body)", icon: Mail, contentLabel: "Email details", contentPlaceholder: "To, subject, body" },
   { id: "sms" as const, label: "SMS", description: "Pre-filled text message to a number", icon: MessageSquare, contentLabel: "Phone number & message", contentPlaceholder: "+1234567890 or number,message" },
   { id: "phone" as const, label: "Phone", description: "Tap to call a phone number", icon: Phone, contentLabel: "Phone number", contentPlaceholder: "+1234567890" },
   { id: "location" as const, label: "Location", description: "Map pin — address or coordinates", icon: MapPin, contentLabel: "Address or coordinates", contentPlaceholder: "Address or lat,lng" },
-  { id: "event" as const, label: "Event", description: "Add to calendar — title, date, place", icon: Calendar, contentLabel: "Event details", contentPlaceholder: "Title, start, end (coming soon)" },
+  { id: "event" as const, label: "Event", description: "Add to calendar — title, date, place", icon: Calendar, contentLabel: "Event details", contentPlaceholder: "Title, start, end" },
   { id: "whatsapp" as const, label: "WhatsApp", description: "Start a chat with a number", icon: MessageCircle, contentLabel: "Phone number (with country code)", contentPlaceholder: "+1234567890" },
 ] as const;
 
@@ -93,6 +99,22 @@ function CreateQRPageContent() {
   const setSmartRedirectIos = useCreateQRStore((s) => s.setSmartRedirectIos);
   const setSmartRedirectAndroid = useCreateQRStore((s) => s.setSmartRedirectAndroid);
   const setSmartRedirectFallback = useCreateQRStore((s) => s.setSmartRedirectFallback);
+  const vcardFields = useCreateQRStore((s) => s.vcardFields);
+  const setVcardFields = useCreateQRStore((s) => s.setVcardFields);
+  const vcardLostMode = useCreateQRStore((s) => s.vcardLostMode);
+  const setVcardLostMode = useCreateQRStore((s) => s.setVcardLostMode);
+  const vcardLostItem = useCreateQRStore((s) => s.vcardLostItem);
+  const setVcardLostItem = useCreateQRStore((s) => s.setVcardLostItem);
+  const wifiFields = useCreateQRStore((s) => s.wifiFields);
+  const setWifiFields = useCreateQRStore((s) => s.setWifiFields);
+  const emailTo = useCreateQRStore((s) => s.emailTo);
+  const emailSubject = useCreateQRStore((s) => s.emailSubject);
+  const emailBody = useCreateQRStore((s) => s.emailBody);
+  const setEmailTo = useCreateQRStore((s) => s.setEmailTo);
+  const setEmailSubject = useCreateQRStore((s) => s.setEmailSubject);
+  const setEmailBody = useCreateQRStore((s) => s.setEmailBody);
+  const eventFields = useCreateQRStore((s) => s.eventFields);
+  const setEventFields = useCreateQRStore((s) => s.setEventFields);
   const qrStyle = useCreateQRStore((s) => s.qrStyle);
   const setLandingTheme = useCreateQRStore((s) => s.setLandingTheme);
   const setAnalyticsEnabled = useCreateQRStore((s) => s.setAnalyticsEnabled);
@@ -170,6 +192,29 @@ function CreateQRPageContent() {
         toast.error("Enter at least the default / fallback URL.");
         return;
       }
+    } else if (selectedType === "vcard") {
+      const hasAny =
+        [vcardFields.firstName, vcardFields.lastName, vcardFields.organization, vcardFields.phone, vcardFields.email]
+          .some((v) => v?.trim());
+      if (!hasAny) {
+        toast.error("Enter at least one contact detail (name, org, phone, or email).");
+        return;
+      }
+    } else if (selectedType === "wifi") {
+      if (!wifiFields.ssid?.trim()) {
+        toast.error("Enter the network name (SSID).");
+        return;
+      }
+    } else if (selectedType === "email") {
+      if (!emailTo?.trim()) {
+        toast.error("Enter the recipient email address.");
+        return;
+      }
+    } else if (selectedType === "event") {
+      if (!eventFields.title?.trim()) {
+        toast.error("Enter the event title.");
+        return;
+      }
     } else if (!content?.trim()) {
       toast.error("Enter content.");
       return;
@@ -192,19 +237,43 @@ function CreateQRPageContent() {
     if (selectedType === "smart_redirect") {
       contentToSend = smartRedirectFallback.trim();
     }
+    if (selectedType === "vcard") {
+      contentToSend = buildVCard(vcardFields);
+    }
+    if (selectedType === "wifi") {
+      contentToSend = buildWifiString(wifiFields);
+    }
+    if (selectedType === "email") {
+      const to = emailTo.trim();
+      let mailto = `mailto:${encodeURIComponent(to)}`;
+      const params = new URLSearchParams();
+      if (emailSubject.trim()) params.set("subject", emailSubject.trim());
+      if (emailBody.trim()) params.set("body", emailBody.trim());
+      if (params.toString()) mailto += "?" + params.toString();
+      contentToSend = mailto;
+    }
+    if (selectedType === "event") {
+      contentToSend = buildEventString({
+        title: eventFields.title.trim(),
+        start: eventFields.start?.trim() || new Date().toISOString(),
+        end: eventFields.end?.trim() || new Date().toISOString(),
+        location: eventFields.location?.trim() ?? "",
+        description: eventFields.description?.trim() ?? "",
+      });
+    }
     const isSmsOrWhatsApp = selectedType === "sms" || selectedType === "whatsapp";
-    const smartRedirectMeta =
-      selectedType === "smart_redirect"
-        ? {
-            metadata: {
-              smartRedirect: {
-                ios: smartRedirectIos.trim() || undefined,
-                android: smartRedirectAndroid.trim() || undefined,
-                fallback: smartRedirectFallback.trim(),
-              },
-            },
-          }
-        : {};
+    const metadata: Record<string, unknown> = {};
+    if (selectedType === "smart_redirect") {
+      metadata.smartRedirect = {
+        ios: smartRedirectIos.trim() || undefined,
+        android: smartRedirectAndroid.trim() || undefined,
+        fallback: smartRedirectFallback.trim(),
+      };
+    }
+    if (selectedType === "vcard" && vcardLostMode) {
+      metadata.vcardLostMode = true;
+      metadata.vcardLostItem = (vcardLostItem?.trim() || "item").trim();
+    }
     const effectiveStyle =
       Object.keys(qrStyle).length > 0
         ? { template: selectedTemplate, ...qrStyle }
@@ -216,7 +285,7 @@ function CreateQRPageContent() {
         contentType: selectedType,
         content: contentToSend,
         ...(isSmsOrWhatsApp && phoneMessage.trim() ? { message: phoneMessage.trim() } : {}),
-        ...smartRedirectMeta,
+        ...(Object.keys(metadata).length > 0 ? { metadata } : {}),
         template: selectedTemplate,
         ...(effectiveStyle ? { style: effectiveStyle } : {}),
         landingTheme,
@@ -353,8 +422,13 @@ function CreateQRPageContent() {
                               <Icon className="size-4" aria-hidden />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <span className="block text-sm font-medium">
+                              <span className="flex items-center gap-2 text-sm font-medium">
                                 {type.label}
+                                {"tag" in type && type.tag && (
+                                  <span className="inline-flex shrink-0 items-center rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                                    {type.tag}
+                                  </span>
+                                )}
                               </span>
                               <span className="block truncate text-xs text-muted-foreground">
                                 {type.description}
@@ -413,9 +487,213 @@ function CreateQRPageContent() {
                     const showCountryCode = isPhoneType(selectedType);
                     const showMessageField = selectedType === "sms" || selectedType === "whatsapp";
                     const showSmartRedirect = selectedType === "smart_redirect";
+                    const showVcardForm = selectedType === "vcard";
+                    const showWifiForm = selectedType === "wifi";
+                    const showEmailForm = selectedType === "email";
+                    const showEventForm = selectedType === "event";
                     return (
                       <div className="space-y-4">
-                        {showSmartRedirect ? (
+                        {showVcardForm ? (
+                          <>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              <div>
+                                <label className="mb-1.5 block text-sm font-medium text-foreground">First name</label>
+                                <Input
+                                  placeholder="John"
+                                  value={vcardFields.firstName ?? ""}
+                                  onChange={(e) => setVcardFields({ firstName: e.target.value })}
+                                  className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
+                                />
+                              </div>
+                              <div>
+                                <label className="mb-1.5 block text-sm font-medium text-foreground">Last name</label>
+                                <Input
+                                  placeholder="Doe"
+                                  value={vcardFields.lastName ?? ""}
+                                  onChange={(e) => setVcardFields({ lastName: e.target.value })}
+                                  className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-sm font-medium text-foreground">Organization (optional)</label>
+                              <Input
+                                placeholder="Acme Inc."
+                                value={vcardFields.organization ?? ""}
+                                onChange={(e) => setVcardFields({ organization: e.target.value })}
+                                className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-sm font-medium text-foreground">Phone (optional)</label>
+                              <Input
+                                type="tel"
+                                placeholder="+1 555 123 4567"
+                                value={vcardFields.phone ?? ""}
+                                onChange={(e) => setVcardFields({ phone: e.target.value })}
+                                className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-sm font-medium text-foreground">Email (optional)</label>
+                              <Input
+                                type="email"
+                                placeholder="john@example.com"
+                                value={vcardFields.email ?? ""}
+                                onChange={(e) => setVcardFields({ email: e.target.value })}
+                                className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
+                              />
+                            </div>
+                            <div className="rounded-lg border border-border/80 bg-muted/20 p-4 space-y-3">
+                              <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-foreground">
+                                <input
+                                  type="checkbox"
+                                  checked={vcardLostMode}
+                                  onChange={(e) => setVcardLostMode(e.target.checked)}
+                                  className="size-4 rounded border-border accent-emerald-500"
+                                />
+                                Enable lost & found
+                              </label>
+                              <p className="text-xs text-muted-foreground">
+                                When someone scans this QR, they’ll see a polite message that you’ve lost an item and how to contact you.
+                              </p>
+                              {vcardLostMode && (
+                                <div className="space-y-2 pt-1">
+                                  <label className="block text-xs font-medium text-foreground">Item or short description</label>
+                                  <Input
+                                    placeholder="e.g. blue water bottle, lunchbox, keys, school bag"
+                                    value={vcardLostItem}
+                                    onChange={(e) => setVcardLostItem(e.target.value)}
+                                    className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25 text-sm"
+                                  />
+                                  <p className="text-xs font-medium text-muted-foreground">Message shown to scanner:</p>
+                                  <div className="rounded-md border border-border/80 bg-background px-3 py-2.5 text-sm text-foreground/90 leading-relaxed">
+                                    I have lost {vcardLostItem.trim() || "this item"}. If you found it, please contact me using the details below so we can arrange its return. Thank you for your kindness!
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">Add at least one of: name, organization, phone, or email.</p>
+                          </>
+                        ) : showWifiForm ? (
+                          <>
+                            <div>
+                              <label className="mb-1.5 block text-sm font-medium text-foreground">Network name (SSID) <span className="text-destructive">*</span></label>
+                              <Input
+                                placeholder="MyWiFi"
+                                value={wifiFields.ssid}
+                                onChange={(e) => setWifiFields({ ssid: e.target.value })}
+                                className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-sm font-medium text-foreground">Password</label>
+                              <Input
+                                type="password"
+                                autoComplete="off"
+                                placeholder="Leave blank for open networks"
+                                value={wifiFields.password}
+                                onChange={(e) => setWifiFields({ password: e.target.value })}
+                                className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-sm font-medium text-foreground">Security</label>
+                              <select
+                                value={wifiFields.security}
+                                onChange={(e) => setWifiFields({ security: e.target.value as "WPA" | "WEP" | "nopass" })}
+                                className="flex h-9 w-full rounded-md border border-border bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+                              >
+                                <option value="WPA">WPA / WPA2</option>
+                                <option value="WEP">WEP</option>
+                                <option value="nopass">None (open)</option>
+                              </select>
+                            </div>
+                          </>
+                        ) : showEmailForm ? (
+                          <>
+                            <div>
+                              <label className="mb-1.5 block text-sm font-medium text-foreground">To (email address) <span className="text-destructive">*</span></label>
+                              <Input
+                                type="email"
+                                placeholder="recipient@example.com"
+                                value={emailTo}
+                                onChange={(e) => setEmailTo(e.target.value)}
+                                className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-sm font-medium text-foreground">Subject (optional)</label>
+                              <Input
+                                placeholder="Hello"
+                                value={emailSubject}
+                                onChange={(e) => setEmailSubject(e.target.value)}
+                                className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-sm font-medium text-foreground">Body (optional)</label>
+                              <textarea
+                                placeholder="Pre-filled message..."
+                                value={emailBody}
+                                onChange={(e) => setEmailBody(e.target.value)}
+                                rows={3}
+                                className="flex w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+                              />
+                            </div>
+                          </>
+                        ) : showEventForm ? (
+                          <>
+                            <div>
+                              <label className="mb-1.5 block text-sm font-medium text-foreground">Event title <span className="text-destructive">*</span></label>
+                              <Input
+                                placeholder="Team meeting"
+                                value={eventFields.title}
+                                onChange={(e) => setEventFields({ title: e.target.value })}
+                                className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
+                              />
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              <div>
+                                <label className="mb-1.5 block text-sm font-medium text-foreground">Start</label>
+                                <Input
+                                  type="datetime-local"
+                                  value={eventFields.start ? eventFields.start.slice(0, 16) : ""}
+                                  onChange={(e) => setEventFields({ start: e.target.value ? new Date(e.target.value).toISOString() : "" })}
+                                  className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
+                                />
+                              </div>
+                              <div>
+                                <label className="mb-1.5 block text-sm font-medium text-foreground">End</label>
+                                <Input
+                                  type="datetime-local"
+                                  value={eventFields.end ? eventFields.end.slice(0, 16) : ""}
+                                  onChange={(e) => setEventFields({ end: e.target.value ? new Date(e.target.value).toISOString() : "" })}
+                                  className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-sm font-medium text-foreground">Location (optional)</label>
+                              <Input
+                                placeholder="Office / Zoom"
+                                value={eventFields.location ?? ""}
+                                onChange={(e) => setEventFields({ location: e.target.value })}
+                                className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-sm font-medium text-foreground">Description (optional)</label>
+                              <textarea
+                                placeholder="Agenda, notes..."
+                                value={eventFields.description ?? ""}
+                                onChange={(e) => setEventFields({ description: e.target.value })}
+                                rows={2}
+                                className="flex w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+                              />
+                            </div>
+                          </>
+                        ) : showSmartRedirect ? (
                           <>
                             <div>
                               <label htmlFor="qr-smart-fallback" className="mb-1.5 block text-sm font-medium text-foreground">
@@ -769,7 +1047,17 @@ function CreateQRPageContent() {
                   size="lg"
                   disabled={
                   !selectedType ||
-                  (selectedType === "smart_redirect" ? !smartRedirectFallback?.trim() : !content?.trim()) ||
+                  (selectedType === "smart_redirect"
+                    ? !smartRedirectFallback?.trim()
+                    : selectedType === "vcard"
+                      ? ![vcardFields.firstName, vcardFields.lastName, vcardFields.organization, vcardFields.phone, vcardFields.email].some((v) => v?.trim())
+                      : selectedType === "wifi"
+                        ? !wifiFields.ssid?.trim()
+                        : selectedType === "email"
+                          ? !emailTo?.trim()
+                          : selectedType === "event"
+                            ? !eventFields.title?.trim()
+                            : !content?.trim()) ||
                   createLoading
                 }
                   onClick={handleCreateQR}

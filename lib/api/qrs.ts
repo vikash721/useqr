@@ -32,7 +32,12 @@ export type QRListItem = {
   scanCount: number;
   createdAt: string;
   updatedAt: string;
-  metadata?: { message?: string; smartRedirect?: { ios?: string; android?: string; fallback?: string } };
+  metadata?: {
+    message?: string;
+    smartRedirect?: { ios?: string; android?: string; fallback?: string };
+    vcardLostMode?: boolean;
+    vcardLostItem?: string;
+  };
 };
 
 export type QRListResponse = {
@@ -73,7 +78,11 @@ export type QRUpdateBody = {
   contentType?: string;
   content?: string;
   message?: string;
-  metadata?: { smartRedirect?: { ios?: string; android?: string; fallback?: string } };
+  metadata?: {
+    smartRedirect?: { ios?: string; android?: string; fallback?: string };
+    vcardLostMode?: boolean;
+    vcardLostItem?: string;
+  };
   template?: string;
   style?: QRListItemStyle;
   landingTheme?: string;

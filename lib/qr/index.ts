@@ -16,6 +16,12 @@ export { buildQRData, getCardBaseUrl } from "./payload";
 export { downloadQRAsPng, sanitizeFilename } from "./download";
 export type { DownloadQROptions } from "./download";
 export type { QRContentType } from "./payload";
+export { buildVCard, parseVCard } from "./vcard";
+export type { VCardFields } from "./vcard";
+export { buildWifiString, parseWifiString } from "./wifi";
+export type { WifiFields, WifiSecurity } from "./wifi";
+export { buildEventString, parseEventString, buildGoogleCalendarUrl } from "./event";
+export type { EventFields } from "./event";
 export {
   getQRStylingOptionsFromStyle,
   normalizeQRStyle,

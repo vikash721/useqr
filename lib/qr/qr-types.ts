@@ -6,6 +6,9 @@
 
 import type { QRContentTypeDb } from "@/lib/db/schemas/qr";
 import { normalizePhoneDigits } from "@/lib/countries";
+import { parseVCard } from "@/lib/qr/vcard";
+import { parseWifiString } from "@/lib/qr/wifi";
+import { parseEventString, buildGoogleCalendarUrl } from "@/lib/qr/event";
 
 /** Behavior when user opens the scan URL */
 export type QRScanBehavior = "redirect" | "landing";
@@ -33,6 +36,8 @@ export type QRTypeResolution =
       structured?: unknown;
       /** Landing style hint from metadata (e.g. vCard: "minimal" | "card" | "full") */
       landingStyle?: string;
+      /** vCard lost & found: polite banner message when owner enabled lost mode */
+      lostMessage?: string;
     };
 
 /** User-facing label per type (for headings) */
@@ -71,15 +76,18 @@ function resolvePhone(content: string): QRTypeResolution {
 
 /**
  * Builds the primary action for email QR — tap to open mail client.
+ * Content may be a full mailto: URL (to?subject=...&body=...) or just the address.
  */
 function resolveEmail(content: string): QRTypeResolution {
   const raw = trim(content);
   if (!raw)
     return { behavior: "landing", actions: [], displayContent: "No email set." };
-  const href = `mailto:${raw}`;
+  const href = raw.startsWith("mailto:") ? raw : `mailto:${raw}`;
+  const toMatch = raw.match(/mailto:([^?]+)/);
+  const subtitle = toMatch ? toMatch[1].trim() : raw.replace(/^mailto:/, "").split("?")[0].trim();
   return {
     behavior: "landing",
-    actions: [{ href, label: "Send email", subtitle: raw, variant: "primary" }],
+    actions: [{ href, label: "Send email", subtitle: subtitle || undefined, variant: "primary" }],
   };
 }
 
@@ -138,8 +146,98 @@ function resolveUrl(content: string): QRTypeResolution {
 }
 
 /**
- * Text, vCard, wifi, location, event: show landing with display content.
- * vCard supports optional metadata.landingStyle for future layout variants.
+ * vCard: parse and show contact summary + "Add to contacts" (vCard data URL) + "Call" when phone present.
+ * When metadata.vcardLostMode is true, adds a polite lostMessage for the landing banner.
+ */
+function resolveVcard(content: string, metadata?: Record<string, unknown>): QRTypeResolution {
+  const raw = trim(content);
+  if (!raw || !raw.includes("BEGIN:VCARD"))
+    return { behavior: "landing", actions: [], displayContent: "No contact set." };
+  const parsed = parseVCard(raw);
+  const lines: string[] = [];
+  const name = [parsed.firstName, parsed.lastName].filter(Boolean).join(" ").trim();
+  if (name) lines.push(name);
+  if (parsed.organization) lines.push(parsed.organization);
+  if (parsed.phone) lines.push(parsed.phone);
+  if (parsed.email) lines.push(parsed.email);
+  const displayContent = lines.length ? lines.join("\n") : raw;
+  const dataUri = `data:text/vcard;charset=utf-8,${encodeURIComponent(raw)}`;
+  const actions: QRAction[] = [
+    { href: dataUri, label: "Add to contacts", variant: "primary" },
+  ];
+  if (parsed.phone?.trim()) {
+    const telDigits = normalizePhoneDigits(parsed.phone.trim());
+    if (telDigits) {
+      actions.push(
+        { href: `tel:${telDigits}`, label: "Call", variant: "secondary" },
+        { href: `https://wa.me/${telDigits}`, label: "WhatsApp", variant: "secondary" }
+      );
+    }
+  }
+  let lostMessage: string | undefined;
+  if (metadata?.vcardLostMode === true) {
+    const item = (metadata.vcardLostItem as string)?.trim() || "this item";
+    lostMessage = `I have lost ${item}. If you found it, please contact me using the details below so we can arrange its return. Thank you for your kindness!`;
+  }
+  return {
+    behavior: "landing",
+    actions,
+    displayContent,
+    structured: parsed,
+    ...(lostMessage ? { lostMessage } : {}),
+  };
+}
+
+/**
+ * WiFi: parse and show network name + password; no deep-link (platform-specific).
+ */
+function resolveWifi(content: string): QRTypeResolution {
+  const raw = trim(content);
+  const parsed = parseWifiString(raw);
+  if (!parsed.ssid)
+    return { behavior: "landing", actions: [], displayContent: raw || "No Wi‑Fi details set." };
+  const lines = [`Network: ${parsed.ssid}`, parsed.password ? `Password: ${parsed.password}` : "No password"];
+  return {
+    behavior: "landing",
+    actions: [],
+    displayContent: lines.join("\n"),
+    structured: parsed,
+  };
+}
+
+/**
+ * Event: parse JSON and show event details + "Add to calendar" (Google Calendar).
+ */
+function resolveEvent(content: string): QRTypeResolution {
+  const parsed = parseEventString(trim(content));
+  if (!parsed || !parsed.title)
+    return { behavior: "landing", actions: [], displayContent: trim(content) || "No event set." };
+  const lines: string[] = [parsed.title];
+  if (parsed.start) lines.push(`Start: ${formatEventDate(parsed.start)}`);
+  if (parsed.end) lines.push(`End: ${formatEventDate(parsed.end)}`);
+  if (parsed.location) lines.push(`Where: ${parsed.location}`);
+  if (parsed.description) lines.push(parsed.description);
+  const displayContent = lines.join("\n");
+  const calUrl = buildGoogleCalendarUrl(parsed as { title: string; start: string; end: string; location?: string; description?: string });
+  return {
+    behavior: "landing",
+    actions: [{ href: calUrl, label: "Add to calendar", variant: "primary" }],
+    displayContent,
+    structured: parsed,
+  };
+}
+
+function formatEventDate(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" });
+  } catch {
+    return iso;
+  }
+}
+
+/**
+ * Text, location: show landing with display content.
  */
 function resolveDisplayOnly(
   content: string,
@@ -184,11 +282,14 @@ export function resolveQRScan(
     case "whatsapp":
       return resolveWhatsApp(trimmed, metadata);
     case "text":
-    case "vcard":
-    case "wifi":
     case "location":
-    case "event":
       return resolveDisplayOnly(trimmed, contentType, metadata);
+    case "vcard":
+      return resolveVcard(trimmed, metadata);
+    case "wifi":
+      return resolveWifi(trimmed);
+    case "event":
+      return resolveEvent(trimmed);
     default:
       return resolveDisplayOnly(trimmed, contentType, metadata);
   }

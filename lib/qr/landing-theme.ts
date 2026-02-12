@@ -81,20 +81,20 @@ const SCAN_PAGE_CONFIG: Record<LandingThemeDb, LandingThemeConfig> = {
   card: {
     wrapper:
       "min-h-svh bg-linear-to-br from-amber-50/60 via-orange-50/40 to-slate-100/80 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950",
-    inner: "px-4 py-8 sm:py-12",
-    container: "w-full max-w-sm mx-auto",
+    inner: "px-5 py-10 sm:py-14 sm:px-6",
+    container: "w-full max-w-sm mx-auto flex flex-col gap-7",
     scannedLabel:
-      "text-[10px] font-semibold uppercase tracking-wider text-amber-700/80 dark:text-amber-400/80",
-    title: "text-2xl font-bold text-slate-900 dark:text-slate-50",
+      "text-xs font-semibold uppercase tracking-[0.18em] text-amber-700/90 dark:text-amber-400/90",
+    title: "text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-50 tracking-tight leading-tight",
     iconWrapper:
       "flex size-14 items-center justify-center rounded-2xl bg-amber-500/20 dark:bg-amber-400/20 text-amber-700 dark:text-amber-300 mb-3",
     contentBlock:
-      "rounded-2xl border-2 border-amber-200/80 dark:border-amber-800/60 bg-white dark:bg-slate-800 shadow-xl shadow-amber-900/5 dark:shadow-black/20 p-6",
+      "rounded-2xl border-2 border-amber-200/80 dark:border-amber-800/60 bg-white dark:bg-slate-800 shadow-xl shadow-amber-900/5 dark:shadow-black/20 p-6 sm:p-8 text-slate-700 dark:text-slate-200 leading-relaxed",
     cta: "rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/30 transition-all active:scale-[0.98] min-h-14 px-6 py-4 flex items-center justify-center gap-3 text-base",
     ctaSecondary:
       "rounded-xl border-2 border-amber-300 dark:border-amber-600 bg-amber-50/50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 font-medium min-h-12 px-5 py-3 flex items-center justify-center gap-3",
     footer:
-      "py-4 text-center text-xs text-slate-500 dark:text-slate-400",
+      "py-5 text-center text-xs text-slate-500 dark:text-slate-400 tracking-wide",
     showHeaderIcon: true,
   },
   full: {

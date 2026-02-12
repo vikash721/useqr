@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ChevronDown, Loader2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +56,7 @@ export function QRCustomizeSection() {
   const setQRStyle = useCreateQRStore((s) => s.setQRStyle);
   const resetQRStyle = useCreateQRStore((s) => s.resetQRStyle);
   const [logoUploading, setLogoUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <section
@@ -240,41 +241,52 @@ export function QRCustomizeSection() {
           </h3>
           <div className="mt-3 flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-3">
-              <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted/50">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                className="absolute h-0 w-0 overflow-hidden opacity-0"
+                tabIndex={-1}
+                aria-hidden
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  setLogoUploading(true);
+                  try {
+                    const form = new FormData();
+                    form.append("file", f);
+                    const res = await fetch("/api/upload", { method: "POST", body: form });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error ?? "Upload failed");
+                    setQRStyle({
+                      logo: {
+                        url: data.url,
+                        size: qrStyle.logo?.size ?? 0.4,
+                        hideBackgroundDots: qrStyle.logo?.hideBackgroundDots ?? true,
+                      },
+                    });
+                    toast.success("Logo uploaded");
+                  } catch (err) {
+                    toast.error(err instanceof Error ? err.message : "Upload failed");
+                  } finally {
+                    setLogoUploading(false);
+                    e.target.value = "";
+                    e.target.blur();
+                  }
+                }}
+                disabled={logoUploading}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 gap-2 border-border bg-background font-medium"
+                disabled={logoUploading}
+                onClick={() => fileInputRef.current?.click()}
+              >
                 <Upload className="size-4 shrink-0" />
                 Upload image
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/gif"
-                  className="sr-only"
-                  onChange={async (e) => {
-                    const f = e.target.files?.[0];
-                    if (!f) return;
-                    setLogoUploading(true);
-                    try {
-                      const form = new FormData();
-                      form.append("file", f);
-                      const res = await fetch("/api/upload", { method: "POST", body: form });
-                      const data = await res.json();
-                      if (!res.ok) throw new Error(data.error ?? "Upload failed");
-                      setQRStyle({
-                        logo: {
-                          url: data.url,
-                          size: qrStyle.logo?.size ?? 0.4,
-                          hideBackgroundDots: qrStyle.logo?.hideBackgroundDots ?? true,
-                        },
-                      });
-                      toast.success("Logo uploaded");
-                    } catch (err) {
-                      toast.error(err instanceof Error ? err.message : "Upload failed");
-                    } finally {
-                      setLogoUploading(false);
-                      e.target.value = "";
-                    }
-                  }}
-                  disabled={logoUploading}
-                />
-              </label>
+              </Button>
               {logoUploading && (
                 <span className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="size-4 animate-spin" /> Uploading…

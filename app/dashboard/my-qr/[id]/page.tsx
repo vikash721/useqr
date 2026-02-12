@@ -35,6 +35,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { qrsApi, type QRListItem } from "@/lib/api";
 import { toast } from "@/lib/toast";
@@ -43,10 +44,46 @@ import {
   downloadQRAsPng,
   getCardBaseUrl,
   sanitizeFilename,
+  parseVCard,
+  parseWifiString,
+  parseEventString,
   type QRTemplateId,
   type QRStyle,
 } from "@/lib/qr";
 import { cn } from "@/lib/utils";
+
+/** Formatted one-line summary for detail page content block (vcard/wifi/event/email). */
+function getContentSummary(contentType: string, content: string | undefined): string | null {
+  const raw = (content ?? "").trim();
+  if (!raw) return null;
+  switch (contentType) {
+    case "vcard": {
+      if (!raw.includes("BEGIN:VCARD")) return null;
+      const v = parseVCard(raw);
+      const name = [v.firstName, v.lastName].filter(Boolean).join(" ").trim();
+      const parts = [name, v.organization, v.phone, v.email].filter(Boolean);
+      return parts.length ? parts.join(" · ") : null;
+    }
+    case "wifi": {
+      const w = parseWifiString(raw);
+      if (!w.ssid) return null;
+      return w.password ? `${w.ssid} (password set)` : w.ssid;
+    }
+    case "event": {
+      const e = parseEventString(raw);
+      if (!e?.title) return null;
+      const when = e.start ? new Date(e.start).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" }) : "";
+      return when ? `${e.title} — ${when}` : e.title;
+    }
+    case "email": {
+      const toMatch = raw.match(/mailto:([^?]+)/);
+      const to = toMatch ? toMatch[1].trim() : raw.replace(/^mailto:/, "").split("?")[0].trim();
+      return to || null;
+    }
+    default:
+      return null;
+  }
+}
 
 function formatContentType(type: string): string {
   const map: Record<string, string> = {
@@ -76,6 +113,37 @@ function formatDate(iso: string): string {
   }
 }
 
+function LostAndFoundSection({
+  qr,
+  lostUpdating,
+  onLostModeChange,
+}: {
+  qr: QRListItem;
+  lostUpdating: boolean;
+  onLostModeChange: (enabled: boolean) => void;
+}) {
+  const meta = qr.metadata as { vcardLostMode?: boolean } | undefined;
+  const enabled = meta?.vcardLostMode === true;
+
+  return (
+    <div>
+      <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        Lost & found
+      </h3>
+      <div className="mt-1">
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
+          <Switch
+            checked={enabled}
+            onCheckedChange={onLostModeChange}
+            disabled={lostUpdating}
+          />
+          {enabled ? "On" : "Off"}
+        </label>
+      </div>
+    </div>
+  );
+}
+
 const DOWNLOAD_QUALITIES = [
   { label: "Standard (512px)", size: 512, description: "Screen & sharing", premium: false },
   { label: "High (1024px)", size: 1024, description: "Large display & small print", premium: true },
@@ -93,6 +161,7 @@ export default function MyQRDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [lostUpdating, setLostUpdating] = useState(false);
   const [downloadLoading, setDownloadLoading] = useState(false);
 
   const fetchQr = useCallback(() => {
@@ -157,6 +226,27 @@ export default function MyQRDetailPage() {
       toast.error(msg);
     } finally {
       setStatusUpdating(false);
+    }
+  };
+
+  const handleLostModeChange = async (enabled: boolean) => {
+    if (!id || !qr) return;
+    setLostUpdating(true);
+    try {
+      const meta = (qr.metadata ?? {}) as Record<string, unknown>;
+      const item = typeof meta.vcardLostItem === "string" ? meta.vcardLostItem : "";
+      const updated = await qrsApi.update(id, {
+        metadata: { ...meta, vcardLostMode: enabled, vcardLostItem: item },
+      });
+      setQr(updated);
+      toast.success(enabled ? "Lost & found message enabled." : "Lost & found message disabled.");
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data
+          ?.error ?? "Failed to update. Try again.";
+      toast.error(msg);
+    } finally {
+      setLostUpdating(false);
     }
   };
 
@@ -297,6 +387,20 @@ export default function MyQRDetailPage() {
                 </div>
               )}
 
+              {qr.contentType === "vcard" && (qr.metadata as { vcardLostMode?: boolean } | undefined)?.vcardLostMode === true && (
+                qr.status !== "active" ? (
+                  <div className="rounded-xl border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+                    <span className="font-medium">QR is disabled.</span>{" "}
+                    People can’t contact you until you enable this QR. Turn it on in the Status section below so your lost & found message works.
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-400">
+                    <span className="font-medium">Lost & found is on.</span>{" "}
+                    When someone scans this QR they’ll see a message that you’ve lost an item and your contact details below.
+                  </div>
+                )
+              )}
+
               {/* QR + details card */}
               <div
                 className={cn(
@@ -364,12 +468,19 @@ export default function MyQRDetailPage() {
                       <p
                         className={cn(
                           "mt-1 break-all text-sm text-foreground",
-                          qr.content?.length > 200 && "line-clamp-4"
+                          (qr.content?.length ?? 0) > 200 && "line-clamp-4"
                         )}
                       >
-                        {qr.content || "—"}
+                        {getContentSummary(qr.contentType, qr.content) ?? qr.content ?? "—"}
                       </p>
                     </div>
+                    {qr.contentType === "vcard" && (
+                      <LostAndFoundSection
+                        qr={qr}
+                        lostUpdating={lostUpdating}
+                        onLostModeChange={handleLostModeChange}
+                      />
+                    )}
                     <div>
                       <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                         Scan URL

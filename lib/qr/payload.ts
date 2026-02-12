@@ -61,8 +61,11 @@ export function buildQRData(
       const body = (message ?? "").trim();
       return body ? `sms:${num}?body=${encodeURIComponent(body)}` : `sms:${num}`;
     }
-    case "email":
-      return content.trim() ? `mailto:${content.trim()}` : "mailto:";
+    case "email": {
+      const raw = content.trim();
+      if (!raw) return "mailto:";
+      return raw.startsWith("mailto:") ? raw : `mailto:${raw}`;
+    }
     case "whatsapp": {
       const num = normalizePhoneDigits(content.trim());
       if (!num) return "https://wa.me/";
