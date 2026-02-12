@@ -17,7 +17,7 @@ export type QRListItem = {
   scanCount: number;
   createdAt: string;
   updatedAt: string;
-  metadata?: { message?: string };
+  metadata?: { message?: string; smartRedirect?: { ios?: string; android?: string; fallback?: string } };
 };
 
 export type QRListResponse = {
@@ -45,6 +45,8 @@ export type QRCreateBody = {
   content: string;
   /** Optional message for SMS (body) or WhatsApp (pre-filled text). */
   message?: string;
+  /** Optional metadata (e.g. smartRedirect for smart redirect type). */
+  metadata?: { smartRedirect?: { ios?: string; android?: string; fallback?: string } };
   template?: string;
   landingTheme?: string;
   analyticsEnabled?: boolean;
@@ -56,6 +58,7 @@ export type QRUpdateBody = {
   contentType?: string;
   content?: string;
   message?: string;
+  metadata?: { smartRedirect?: { ios?: string; android?: string; fallback?: string } };
   template?: string;
   landingTheme?: string;
   analyticsEnabled?: boolean;

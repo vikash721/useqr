@@ -126,7 +126,7 @@ export type QRUpdateInput = QRUpdateBody & { payload?: string };
 /**
  * Updates a QR. Only updates if _id + clerkId match. Returns the updated doc or null.
  * Pass payload when contentType or content changed (server recomputes).
- * If update.message is set, it is stored in metadata.message (not as a top-level field).
+ * If update.message is set, it is stored in metadata.message. If update.metadata is set, it is merged with existing metadata.
  */
 export async function updateQR(
   id: string,
@@ -136,12 +136,16 @@ export async function updateQR(
   const db = await getDb();
   const coll = db.collection<QRDocument>(QRS_COLLECTION);
   const now = new Date();
-  const { message, ...rest } = update;
+  const { message, metadata: updateMetadata, ...rest } = update;
   const $set: Partial<QRDocument> = { ...rest, updatedAt: now };
-  if (message !== undefined) {
+  if (message !== undefined || updateMetadata !== undefined) {
     const existing = await coll.findOne({ _id: id, clerkId });
     const prevMeta = (existing?.metadata as Record<string, unknown>) ?? {};
-    $set.metadata = { ...prevMeta, message };
+    $set.metadata = {
+      ...prevMeta,
+      ...(message !== undefined ? { message } : {}),
+      ...(updateMetadata && Object.keys(updateMetadata).length > 0 ? updateMetadata : {}),
+    };
   }
   const result = await coll.findOneAndUpdate(
     { _id: id, clerkId },

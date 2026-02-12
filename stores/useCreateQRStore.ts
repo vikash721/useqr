@@ -24,6 +24,12 @@ export type CreateQRState = {
   phoneCountryCode: string;
   /** Optional message for SMS (body) or WhatsApp (pre-filled text). Separate from content (number). */
   phoneMessage: string;
+  /** Smart redirect: iOS URL (e.g. App Store). Used when type is smart_redirect. */
+  smartRedirectIos: string;
+  /** Smart redirect: Android URL (e.g. Play Store). Used when type is smart_redirect. */
+  smartRedirectAndroid: string;
+  /** Smart redirect: Fallback URL (desktop / unknown device). Used when type is smart_redirect. */
+  smartRedirectFallback: string;
   /** Template design (classic, rounded, dots, etc.) */
   selectedTemplate: QRTemplateId;
   /** Landing page theme when someone scans the QR */
@@ -39,7 +45,7 @@ export type QRLoadForEdit = {
   content: string;
   template?: string;
   landingTheme?: string;
-  metadata?: { message?: string };
+  metadata?: { message?: string; smartRedirect?: { ios?: string; android?: string; fallback?: string } };
   analyticsEnabled?: boolean;
 };
 
@@ -49,6 +55,9 @@ export type CreateQRActions = {
   setContent: (content: string) => void;
   setPhoneCountryCode: (dial: string) => void;
   setPhoneMessage: (message: string) => void;
+  setSmartRedirectIos: (url: string) => void;
+  setSmartRedirectAndroid: (url: string) => void;
+  setSmartRedirectFallback: (url: string) => void;
   setSelectedTemplate: (template: QRTemplateId) => void;
   setLandingTheme: (theme: LandingThemeDb) => void;
   setAnalyticsEnabled: (enabled: boolean) => void;
@@ -66,6 +75,9 @@ const initialState: CreateQRState = {
   content: "",
   phoneCountryCode: "+1",
   phoneMessage: "",
+  smartRedirectIos: "",
+  smartRedirectAndroid: "",
+  smartRedirectFallback: "",
   selectedTemplate: "classic",
   landingTheme: DEFAULT_LANDING_THEME,
   analyticsEnabled: true,
@@ -87,6 +99,9 @@ export const useCreateQRStore = create<CreateQRState & CreateQRActions>()(
       setContent: (content) => set({ content }),
       setPhoneCountryCode: (phoneCountryCode) => set({ phoneCountryCode }),
       setPhoneMessage: (phoneMessage) => set({ phoneMessage }),
+      setSmartRedirectIos: (smartRedirectIos) => set({ smartRedirectIos }),
+      setSmartRedirectAndroid: (smartRedirectAndroid) => set({ smartRedirectAndroid }),
+      setSmartRedirectFallback: (smartRedirectFallback) => set({ smartRedirectFallback }),
       setSelectedTemplate: (selectedTemplate) => set({ selectedTemplate }),
       setLandingTheme: (landingTheme) => set({ landingTheme }),
       setAnalyticsEnabled: (analyticsEnabled) => set({ analyticsEnabled }),
@@ -108,6 +123,8 @@ export const useCreateQRStore = create<CreateQRState & CreateQRActions>()(
           phoneCountryCode = parsed.dial;
           content = parsed.national;
         }
+        const meta = qr.metadata as { message?: string; smartRedirect?: { ios?: string; android?: string; fallback?: string } } | undefined;
+        const smartRedirect = meta?.smartRedirect;
         set({
           editingId: qr.id,
           previewQRId: qr.id,
@@ -116,6 +133,9 @@ export const useCreateQRStore = create<CreateQRState & CreateQRActions>()(
           content,
           phoneCountryCode,
           phoneMessage,
+          smartRedirectIos: smartRedirect?.ios ?? "",
+          smartRedirectAndroid: smartRedirect?.android ?? "",
+          smartRedirectFallback: smartRedirect?.fallback ?? content ?? "",
           selectedTemplate: (qr.template as QRTemplateId) ?? "classic",
           landingTheme: (qr.landingTheme as LandingThemeDb) ?? DEFAULT_LANDING_THEME,
           analyticsEnabled: qr.analyticsEnabled ?? true,
@@ -131,6 +151,9 @@ export const useCreateQRStore = create<CreateQRState & CreateQRActions>()(
         content: s.content,
         phoneCountryCode: s.phoneCountryCode,
         phoneMessage: s.phoneMessage,
+        smartRedirectIos: s.smartRedirectIos,
+        smartRedirectAndroid: s.smartRedirectAndroid,
+        smartRedirectFallback: s.smartRedirectFallback,
         selectedTemplate: s.selectedTemplate,
         landingTheme: s.landingTheme,
         analyticsEnabled: s.analyticsEnabled,

@@ -17,7 +17,8 @@ export type QRContentType =
   | "phone"
   | "location"
   | "event"
-  | "whatsapp";
+  | "whatsapp"
+  | "smart_redirect";
 
 /**
  * Builds the data string to encode in the QR for the given type and content.
@@ -39,6 +40,10 @@ export function buildQRData(
 
   if (baseUrl && qrId) {
     return `${baseUrl.replace(/\/$/, "")}/q/${qrId}`;
+  }
+
+  if (type === "smart_redirect") {
+    return content.trim() || " ";
   }
 
   switch (type) {

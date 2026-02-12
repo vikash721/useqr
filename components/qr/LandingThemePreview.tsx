@@ -3,7 +3,7 @@
 import type { LandingThemeDb } from "@/lib/db/schemas/qr";
 import type { QRContentTypeDb } from "@/lib/db/schemas/qr";
 import { getQRTypeLabel } from "@/lib/qr/qr-types";
-import { Phone, Mail, MessageSquare, MessageCircle, User, FileText, Link2, Wifi, MapPin, Calendar } from "lucide-react";
+import { Phone, Mail, MessageSquare, MessageCircle, User, FileText, Link2, Wifi, MapPin, Calendar, Smartphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ACTION_TYPES = ["phone", "email", "sms", "whatsapp"] as const;
@@ -17,6 +17,7 @@ const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
   sms: MessageSquare,
   whatsapp: MessageCircle,
   url: Link2,
+  smart_redirect: Smartphone,
   vcard: User,
   text: FileText,
   wifi: Wifi,

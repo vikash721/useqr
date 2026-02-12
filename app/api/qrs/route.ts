@@ -38,17 +38,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const { name, contentType, content, message, template, landingTheme, analyticsEnabled, status } =
+  const { name, contentType, content, message, metadata: bodyMetadata, template, landingTheme, analyticsEnabled, status } =
     parsed.data;
 
   const baseUrl = getCardBaseUrl();
   const _id = generateQRId();
   const payload = buildQRData(contentType, content, { baseUrl, qrId: _id, message });
 
-  const metadata =
-    message !== undefined && message !== ""
-      ? { message: message.trim() }
-      : undefined;
+  const metadata = (() => {
+    const base = message !== undefined && message !== "" ? { message: message.trim() } : {};
+    return bodyMetadata && Object.keys(bodyMetadata).length > 0 ? { ...base, ...bodyMetadata } : (Object.keys(base).length ? base : undefined);
+  })();
 
   try {
     await ensureQRIndexes();

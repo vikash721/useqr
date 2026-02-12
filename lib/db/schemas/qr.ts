@@ -18,6 +18,7 @@ export const qrContentTypeSchema = z.enum([
   "location",
   "event",
   "whatsapp",
+  "smart_redirect",
 ]);
 export type QRContentTypeDb = z.infer<typeof qrContentTypeSchema>;
 
@@ -69,6 +70,8 @@ export const qrCreateBodySchema = z.object({
   content: z.string(),
   /** Optional message for SMS (body) or WhatsApp (pre-filled text). Stored in metadata.message. */
   message: z.string().max(1000).optional(),
+  /** Optional metadata (e.g. smartRedirect: { ios, android, fallback }). */
+  metadata: z.record(z.string(), z.unknown()).optional(),
   template: qrTemplateSchema.default("classic"),
   landingTheme: landingThemeSchema.default("default"),
   analyticsEnabled: z.boolean().default(true),
@@ -83,6 +86,7 @@ export const qrUpdateBodySchema = z.object({
   contentType: qrContentTypeSchema.optional(),
   content: z.string().optional(),
   message: z.string().max(1000).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   template: qrTemplateSchema.optional(),
   landingTheme: landingThemeSchema.optional(),
   analyticsEnabled: z.boolean().optional(),

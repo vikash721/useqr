@@ -47,6 +47,7 @@ const TYPE_LABELS: Record<QRContentTypeDb, string> = {
   location: "Location",
   event: "Event",
   whatsapp: "WhatsApp",
+  smart_redirect: "Smart redirect",
 };
 
 function trim(content: string): string {
@@ -169,6 +170,11 @@ export function resolveQRScan(
   switch (contentType) {
     case "url":
       return resolveUrl(trimmed);
+    case "smart_redirect": {
+      const redirects = metadata?.smartRedirect as { ios?: string; android?: string; fallback?: string } | undefined;
+      const fallback = redirects?.fallback?.trim() || redirects?.ios?.trim() || redirects?.android?.trim() || trimmed || "";
+      return { behavior: "redirect", url: fallback || "https://example.com" };
+    }
     case "phone":
       return resolvePhone(trimmed);
     case "email":

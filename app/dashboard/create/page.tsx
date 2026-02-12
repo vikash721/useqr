@@ -19,6 +19,7 @@ import {
   Phone,
   QrCode,
   Save,
+  Smartphone,
   User,
   Wifi,
   Maximize2,
@@ -57,6 +58,7 @@ function hasLandingPage(contentType: string | null): boolean {
 
 const QR_TYPES = [
   { id: "url" as const, label: "URL / Link", description: "Website, landing page, or any link", icon: Link2, contentLabel: "URL or link", contentPlaceholder: "https://example.com" },
+  { id: "smart_redirect" as const, label: "Smart redirect", description: "Redirect by device — App Store, Play Store, or fallback", icon: Smartphone, contentLabel: "Redirect URLs", contentPlaceholder: "" },
   { id: "vcard" as const, label: "vCard", description: "Contact card — name, phone, email", icon: User, contentLabel: "Contact details", contentPlaceholder: "Name, phone, email (coming soon)" },
   { id: "wifi" as const, label: "Wi‑Fi", description: "Network name and password", icon: Wifi, contentLabel: "Wi‑Fi details", contentPlaceholder: "Network name, password (coming soon)" },
   { id: "text" as const, label: "Plain text", description: "Short message or note", icon: FileText, contentLabel: "Your message", contentPlaceholder: "Enter your text..." },
@@ -134,6 +136,12 @@ function CreateQRPageContent() {
   const setPhoneCountryCode = useCreateQRStore((s) => s.setPhoneCountryCode);
   const phoneMessage = useCreateQRStore((s) => s.phoneMessage);
   const setPhoneMessage = useCreateQRStore((s) => s.setPhoneMessage);
+  const smartRedirectIos = useCreateQRStore((s) => s.smartRedirectIos);
+  const smartRedirectAndroid = useCreateQRStore((s) => s.smartRedirectAndroid);
+  const smartRedirectFallback = useCreateQRStore((s) => s.smartRedirectFallback);
+  const setSmartRedirectIos = useCreateQRStore((s) => s.setSmartRedirectIos);
+  const setSmartRedirectAndroid = useCreateQRStore((s) => s.setSmartRedirectAndroid);
+  const setSmartRedirectFallback = useCreateQRStore((s) => s.setSmartRedirectFallback);
   const setSelectedTemplate = useCreateQRStore((s) => s.setSelectedTemplate);
   const setLandingTheme = useCreateQRStore((s) => s.setLandingTheme);
   const setAnalyticsEnabled = useCreateQRStore((s) => s.setAnalyticsEnabled);
@@ -186,8 +194,18 @@ function CreateQRPageContent() {
   };
 
   const handleCreateQR = async () => {
-    if (!selectedType || !content?.trim()) {
-      toast.error("Choose a type and enter content.");
+    if (!selectedType) {
+      toast.error("Choose a type.");
+      return;
+    }
+    if (selectedType === "smart_redirect") {
+      const fallback = smartRedirectFallback.trim();
+      if (!fallback) {
+        toast.error("Enter at least the default / fallback URL.");
+        return;
+      }
+    } else if (!content?.trim()) {
+      toast.error("Enter content.");
       return;
     }
     if (isPhoneType(selectedType)) {
@@ -205,13 +223,29 @@ function CreateQRPageContent() {
       const nationalDigits = normalizePhoneDigits(contentToSend);
       contentToSend = dialDigits + nationalDigits;
     }
+    if (selectedType === "smart_redirect") {
+      contentToSend = smartRedirectFallback.trim();
+    }
     const isSmsOrWhatsApp = selectedType === "sms" || selectedType === "whatsapp";
+    const smartRedirectMeta =
+      selectedType === "smart_redirect"
+        ? {
+            metadata: {
+              smartRedirect: {
+                ios: smartRedirectIos.trim() || undefined,
+                android: smartRedirectAndroid.trim() || undefined,
+                fallback: smartRedirectFallback.trim(),
+              },
+            },
+          }
+        : {};
     try {
       const body = {
         name: name?.trim() || undefined,
         contentType: selectedType,
         content: contentToSend,
         ...(isSmsOrWhatsApp && phoneMessage.trim() ? { message: phoneMessage.trim() } : {}),
+        ...smartRedirectMeta,
         template: selectedTemplate,
         landingTheme,
         analyticsEnabled,
@@ -406,21 +440,75 @@ function CreateQRPageContent() {
                     if (!typeConfig) return null;
                     const showCountryCode = isPhoneType(selectedType);
                     const showMessageField = selectedType === "sms" || selectedType === "whatsapp";
+                    const showSmartRedirect = selectedType === "smart_redirect";
                     return (
                       <div className="space-y-4">
-                        <div>
-                          <label
-                            htmlFor="qr-content"
-                            className="mb-1.5 block text-sm font-medium text-foreground"
-                          >
-                            {showCountryCode
-                              ? selectedType === "sms"
-                                ? "Phone number"
-                                : selectedType === "whatsapp"
-                                  ? "Phone number"
-                                  : typeConfig.contentLabel
-                              : typeConfig.contentLabel}
-                          </label>
+                        {showSmartRedirect ? (
+                          <>
+                            <div>
+                              <label htmlFor="qr-smart-fallback" className="mb-1.5 block text-sm font-medium text-foreground">
+                                Default / fallback URL <span className="text-destructive">*</span>
+                              </label>
+                              <Input
+                                id="qr-smart-fallback"
+                                type="url"
+                                inputMode="url"
+                                placeholder="https://example.com or App Store / Play Store link"
+                                value={smartRedirectFallback}
+                                onChange={(e) => setSmartRedirectFallback(e.target.value)}
+                                className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
+                              />
+                              <p className="mt-1.5 text-xs text-muted-foreground">
+                                Used for desktop or when no platform-specific URL is set.
+                              </p>
+                            </div>
+                            <div>
+                              <label htmlFor="qr-smart-ios" className="mb-1.5 block text-sm font-medium text-foreground">
+                                iOS (App Store) URL <span className="text-muted-foreground font-normal">(optional)</span>
+                              </label>
+                              <Input
+                                id="qr-smart-ios"
+                                type="url"
+                                inputMode="url"
+                                placeholder="https://apps.apple.com/app/..."
+                                value={smartRedirectIos}
+                                onChange={(e) => setSmartRedirectIos(e.target.value)}
+                                className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
+                              />
+                            </div>
+                            <div>
+                              <label htmlFor="qr-smart-android" className="mb-1.5 block text-sm font-medium text-foreground">
+                                Android (Play Store) URL <span className="text-muted-foreground font-normal">(optional)</span>
+                              </label>
+                              <Input
+                                id="qr-smart-android"
+                                type="url"
+                                inputMode="url"
+                                placeholder="https://play.google.com/store/apps/..."
+                                value={smartRedirectAndroid}
+                                onChange={(e) => setSmartRedirectAndroid(e.target.value)}
+                                className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
+                              />
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Scanners are sent to the right link based on their device (iPhone → iOS URL, Android → Android URL, else fallback).
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <div>
+                              <label
+                                htmlFor="qr-content"
+                                className="mb-1.5 block text-sm font-medium text-foreground"
+                              >
+                                {showCountryCode
+                                  ? selectedType === "sms"
+                                    ? "Phone number"
+                                    : selectedType === "whatsapp"
+                                      ? "Phone number"
+                                      : typeConfig.contentLabel
+                                  : typeConfig.contentLabel}
+                              </label>
                         {showCountryCode ? (
                           <>
                             <div className="flex gap-2">
@@ -478,6 +566,8 @@ function CreateQRPageContent() {
                               className="border-border bg-background focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/25"
                             />
                           </div>
+                        )}
+                          </>
                         )}
                       </div>
                     );
@@ -665,6 +755,15 @@ function CreateQRPageContent() {
                     <span className="font-medium text-foreground">Links open directly.</span> When someone scans this QR, they’ll go straight to your URL — no landing page. Landing theme only applies to other types (call, contact, text, etc.).
                   </p>
                 </section>
+              ) : selectedType === "smart_redirect" ? (
+                <section
+                  className="rounded-xl border border-border/60 bg-muted/30 p-5"
+                  aria-labelledby="qr-smart-redirect-skip"
+                >
+                  <p id="qr-smart-redirect-skip" className="text-sm text-muted-foreground">
+                    <span className="font-medium text-foreground">Redirect by device.</span> Scanners are sent to the right URL based on their device (iOS → App Store, Android → Play Store, or your default link). No landing page.
+                  </p>
+                </section>
               ) : null}
 
               {/* Analytics toggle */}
@@ -752,7 +851,11 @@ function CreateQRPageContent() {
                 </Button>
                 <Button
                   size="lg"
-                  disabled={!selectedType || !content?.trim() || createLoading}
+                  disabled={
+                  !selectedType ||
+                  (selectedType === "smart_redirect" ? !smartRedirectFallback?.trim() : !content?.trim()) ||
+                  createLoading
+                }
                   onClick={handleCreateQR}
                   className="bg-emerald-500 text-white hover:bg-emerald-600 focus-visible:ring-emerald-500/25 disabled:opacity-50"
                 >
