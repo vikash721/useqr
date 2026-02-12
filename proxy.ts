@@ -12,11 +12,7 @@ const isWebhook = createRouteMatcher(["/api/webhooks/clerk"]);
  * - Not signed in + visiting /dashboard → redirect to /login?redirect=/dashboard
  * - Otherwise allow
  *
- * contentSecurityPolicy: {} enables Clerk's default CSP so Smart CAPTCHA
- * (Cloudflare Turnstile) can load: frame-src and script-src include
- * https://challenges.cloudflare.com. A 401 on challenges.cloudflare.com
- * for /cdn-cgi/challenge-platform/h/b/pat/... is expected (Private Access
- * Token probe) and does not mean the CAPTCHA failed.
+ * CSP (including img-src for ImageKit logos) is set in next.config.ts.
  */
 export default clerkMiddleware(
   async (auth, req) => {
@@ -39,25 +35,5 @@ export default clerkMiddleware(
     }
 
     return NextResponse.next();
-  },
-  {
-    contentSecurityPolicy: {
-      directives: {
-        // qr-code-styling internally renders the QR as an SVG data-URI loaded
-        // into an <img> before drawing to canvas. Without "data:" and "blob:"
-        // here, the browser's CSP blocks that load and the QR never appears.
-        // Giphy GIF in MissionPassedModal (explicit hosts; wildcards can fail in prod CSP)
-        "img-src": [
-          "data:",
-          "blob:",
-          "https://media0.giphy.com",
-          "https://media1.giphy.com",
-          "https://media2.giphy.com",
-          "https://media3.giphy.com",
-          "https://media4.giphy.com",
-          "https://i.giphy.com",
-        ],
-      },
-    },
   }
 );

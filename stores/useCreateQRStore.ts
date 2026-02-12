@@ -71,6 +71,8 @@ export type CreateQRActions = {
   setAnalyticsEnabled: (enabled: boolean) => void;
   /** Load existing QR data for edit mode (prefill form and set editingId). */
   loadForEdit: (qr: QRLoadForEdit) => void;
+  /** Set preview QR id (used after mount to avoid SSR/client hydration mismatch). */
+  setPreviewQRId: (id: string) => void;
   /** Reset form and generate a new preview id (e.g. after create or "Start over") */
   reset: () => void;
 };
@@ -92,10 +94,11 @@ const initialState: CreateQRState = {
   analyticsEnabled: true,
 };
 
+/** Initial state for store; previewQRId is left empty so server and client match (set on client after mount). */
 function getInitialState(): CreateQRState {
   return {
     ...initialState,
-    previewQRId: generateQRId(),
+    previewQRId: "",
   };
 }
 
@@ -116,6 +119,7 @@ export const useCreateQRStore = create<CreateQRState & CreateQRActions>()(
       resetQRStyle: () => set({ qrStyle: {} }),
       setLandingTheme: (landingTheme) => set({ landingTheme }),
       setAnalyticsEnabled: (analyticsEnabled) => set({ analyticsEnabled }),
+      setPreviewQRId: (previewQRId) => set({ previewQRId }),
       loadForEdit: (qr) => {
         const type = qr.contentType as QRContentType;
         const isPhoneType = type === "phone" || type === "sms" || type === "whatsapp";
@@ -153,7 +157,7 @@ export const useCreateQRStore = create<CreateQRState & CreateQRActions>()(
           analyticsEnabled: qr.analyticsEnabled ?? true,
         });
       },
-      reset: () => set(getInitialState()),
+      reset: () => set({ ...getInitialState(), previewQRId: generateQRId() }),
     }),
     {
       name: "useqr-create-draft",

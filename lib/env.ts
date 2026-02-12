@@ -18,6 +18,12 @@ const serverEnvSchema = z.object({
   TELEGRAM_CHAT_ID: z.string().min(1).optional(),
   /** Resend API key. Required for sending transactional email (welcome, waitlist). */
   RESEND_API_KEY: z.string().min(1).optional(),
+  /** ImageKit URL endpoint (e.g. https://ik.imagekit.io/useqr). Required for /api/upload. */
+  IMAGEKIT_URL_ENDPOINT: z.string().min(1).optional(),
+  /** ImageKit public key. Optional; used for URL building. */
+  IMAGEKIT_PUBLIC_KEY: z.string().min(1).optional(),
+  /** ImageKit private key. Required for server-side uploads in /api/upload. */
+  IMAGEKIT_PRIVATE_KEY: z.string().min(1).optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
