@@ -474,14 +474,7 @@ export default function ProfilePage() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <Link
-                        href="/dashboard/pricing"
-                        className="text-xs text-muted-foreground underline-offset-2 hover:underline"
-                      >
-                        Change plan
-                      </Link>
-                      {!subscription.scheduledChangeEffectiveAt ? (
+                    {!subscription.scheduledChangeEffectiveAt ? (
                       <Button
                         variant="outline"
                         size="sm"
@@ -492,7 +485,7 @@ export default function ProfilePage() {
                         Cancel subscription
                       </Button>
                     ) : (
-                      <>
+                      <div className="flex flex-col items-start gap-2">
                         <span className="text-xs text-muted-foreground">
                           Cancellation scheduled · {formatDateShort(subscription.scheduledChangeEffectiveAt ?? undefined)}
                         </span>
@@ -508,9 +501,8 @@ export default function ProfilePage() {
                           ) : null}
                           Keep my subscription
                         </Button>
-                      </>
+                      </div>
                     )}
-                    </div>
                   </div>
                   {transactions.length > 0 && (
                     <div className="px-6 py-4 sm:px-8">
