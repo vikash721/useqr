@@ -12,6 +12,7 @@ import {
   Package,
   PencilRuler,
   QrCode,
+  Sparkles,
   User,
 } from "lucide-react";
 import Link from "next/link";
@@ -41,6 +42,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -94,6 +96,25 @@ export function AppSidebar() {
   const email = user?.email ?? "";
   const initial = (displayName[0] ?? "U").toUpperCase();
   const avatarUrl = user?.imageUrl ?? null;
+  const plan = user?.plan?.toLowerCase() ?? "free";
+  const hasPaidPlan = plan === "starter" || plan === "pro" || plan === "business";
+  const planLabel =
+    plan === "starter"
+      ? "Starter"
+      : plan === "pro"
+        ? "Pro"
+        : plan === "business"
+          ? "Business"
+          : null;
+
+  const avatarPlanGlow =
+    plan === "starter"
+      ? "shadow-[0_0_10px_3px_rgba(59,130,246,0.42)]"
+      : plan === "pro"
+        ? "shadow-[0_0_10px_3px_rgba(16,185,129,0.42)]"
+        : plan === "business"
+          ? "shadow-[0_0_10px_3px_rgba(251,191,36,0.45)]"
+          : "";
 
   const handleSignOut = async () => {
     clearUser();
@@ -191,10 +212,12 @@ export function AppSidebar() {
                     <img
                       src={avatarUrl}
                       alt=""
-                      className="size-9 shrink-0 rounded-full object-cover transition-[transform] duration-300 ease-out group-data-[collapsible=icon]:size-8"
+                      className={`size-9 shrink-0 rounded-full object-cover transition-[transform] duration-300 ease-out group-data-[collapsible=icon]:size-8 ${avatarPlanGlow}`}
                     />
                   ) : (
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-sm font-medium text-sidebar-accent-foreground transition-[transform] duration-300 ease-out group-data-[collapsible=icon]:size-8">
+                    <div
+                      className={`flex size-9 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-sm font-medium text-sidebar-accent-foreground transition-[transform] duration-300 ease-out group-data-[collapsible=icon]:size-8 ${avatarPlanGlow}`}
+                    >
                       {initial}
                     </div>
                   )}
@@ -214,6 +237,28 @@ export function AppSidebar() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="right" align="end" className="w-56">
+                {hasPaidPlan && planLabel ? (
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                    <Link
+                      href="/dashboard/profile"
+                      className="flex items-center gap-2 rounded-md  py-2 text-amber-600 dark:text-amber-400"
+                    >
+                      <Crown className="size-4 shrink-0" />
+                      <span className="font-medium">{planLabel} · current</span>
+                    </Link>
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem asChild className="cursor-pointer p-0">
+                    <Link
+                      href="/dashboard/pricing"
+                      className="flex items-center gap-2 rounded-md bg-linear-to-r from-emerald-500 to-emerald-600 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-95"
+                    >
+                      <Sparkles className="size-4 shrink-0" />
+                      Upgrade
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem asChild className="cursor-pointer">
                   <Link href="/dashboard/profile">
                     <User className="mr-2 size-4" />
