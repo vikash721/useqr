@@ -1,10 +1,10 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { Check, Minus } from "lucide-react";
+import { Check, Loader2, Minus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { PlanThankYouModal } from "@/components/modals";
+import { PlanThankYouModal, ChangePlanModal } from "@/components/modals";
 import { PADDLE_CHECKOUT_COMPLETED_EVENT, usePaddle } from "@/components/providers/PaddleProvider";
 import { usersApi } from "@/lib/api";
 import { toast } from "@/lib/toast";
@@ -17,7 +17,7 @@ const PLANS = [
     description: "Try it free",
     price: "$0",
     period: "forever",
-    cta: "Get started",
+    cta: "Go to dashboard",
     href: "/dashboard",
     featured: false,
   },
@@ -103,10 +103,17 @@ export function PricingContent({ showCta = true }: { showCta?: boolean }) {
   const [planModalOpen, setPlanModalOpen] = useState(false);
   const [planModalVariant, setPlanModalVariant] = useState<"success" | "coming_soon">("coming_soon");
   const [planModalPlanName, setPlanModalPlanName] = useState<string | undefined>();
+  const [changingPlanId, setChangingPlanId] = useState<"starter" | "pro" | "business" | null>(null);
+  const [changePlanModalOpen, setChangePlanModalOpen] = useState(false);
+  const [changePlanTarget, setChangePlanTarget] = useState<"starter" | "pro" | "business" | null>(null);
+  const [previewAmount, setPreviewAmount] = useState<{ amountCents: number; currencyCode: string } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const lastOpenedPlanRef = useRef<"starter" | "pro" | "business" | null>(null);
   const { openCheckout } = usePaddle();
   const { user } = useUser();
   const setUser = useUserStore((s) => s.setUser);
+  const storeUser = useUserStore((s) => s.user);
 
   useEffect(() => {
     const onCheckoutCompleted = async () => {
@@ -147,6 +154,36 @@ export function PricingContent({ showCta = true }: { showCta?: boolean }) {
     return () => window.removeEventListener(PADDLE_CHECKOUT_COMPLETED_EVENT, onCheckoutCompleted);
   }, [setUser]);
 
+  useEffect(() => {
+    if (!changePlanModalOpen || !changePlanTarget) {
+      setPreviewAmount(null);
+      setPreviewError(null);
+      return;
+    }
+    let cancelled = false;
+    setPreviewLoading(true);
+    setPreviewError(null);
+    usersApi
+      .getChangePlanPreview(changePlanTarget)
+      .then((data) => {
+        if (!cancelled) {
+          setPreviewAmount({ amountCents: data.amountCents, currencyCode: data.currencyCode });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPreviewError("Could not load amount");
+          setPreviewAmount(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setPreviewLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [changePlanModalOpen, changePlanTarget]);
+
   const handlePaidPlanClick = async (planId: "starter" | "pro" | "business") => {
     lastOpenedPlanRef.current = planId;
     const opened = await openCheckout(planId, {
@@ -160,6 +197,35 @@ export function PricingContent({ showCta = true }: { showCta?: boolean }) {
       setPlanModalOpen(true);
     }
   };
+
+  const handleChangePlan = async (planId: "starter" | "pro" | "business") => {
+    setChangingPlanId(planId);
+    try {
+      const data = await usersApi.changePlan(planId);
+      toast.success(data.message);
+      setChangePlanModalOpen(false);
+      setChangePlanTarget(null);
+      setPreviewAmount(null);
+      setPreviewError(null);
+      if (data.plan && storeUser) {
+        setUser({
+          ...storeUser,
+          plan: data.plan as "free" | "starter" | "pro" | "business",
+        });
+      }
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        (err instanceof Error ? err.message : "Failed to change plan");
+      toast.error(message);
+    } finally {
+      setChangingPlanId(null);
+    }
+  };
+
+  const currentPlanId = storeUser?.plan?.toLowerCase() ?? null;
+  const hasActivePaidPlan =
+    currentPlanId === "starter" || currentPlanId === "pro" || currentPlanId === "business";
 
   return (
     <>
@@ -178,20 +244,29 @@ export function PricingContent({ showCta = true }: { showCta?: boolean }) {
       {/* Plan cards */}
       <section className="w-full border-b border-white/10 bg-black px-6 py-12 lg:py-16">
         <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {PLANS.map((plan) => (
+          {PLANS.map((plan) => {
+            const isCurrentPlan = currentPlanId !== null && plan.id === currentPlanId;
+            return (
             <div
               key={plan.id}
               className={`relative flex flex-col rounded-lg border px-6 py-6 transition-colors ${
-                plan.featured
-                  ? "border-emerald-500/50 bg-emerald-500/5"
-                  : "border-white/10 bg-white/2 hover:border-white/15"
+                isCurrentPlan
+                  ? "border-amber-500/50 bg-amber-500/5 ring-1 ring-amber-500/30"
+                  : plan.featured
+                    ? "border-emerald-500/50 bg-emerald-500/5"
+                    : "border-white/10 bg-white/2 hover:border-white/15"
               }`}
             >
-              {plan.featured && (
+              {isCurrentPlan ? (
+                <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-400 px-3 py-1 text-xs font-semibold text-black shadow-[0_0_12px_rgba(251,191,36,0.4)]">
+                  <span className="size-1.5 shrink-0 rounded-full bg-black/40" />
+                  Your plan
+                </span>
+              ) : plan.featured ? (
                 <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded bg-emerald-500 px-2 py-0.5 text-xs font-medium text-white">
                   Popular
                 </span>
-              )}
+              ) : null}
               <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
               <p className="mt-1 text-sm text-zinc-500">{plan.description}</p>
               <div className="mt-4 flex items-baseline gap-1">
@@ -211,6 +286,36 @@ export function PricingContent({ showCta = true }: { showCta?: boolean }) {
                 >
                   {plan.cta}
                 </Link>
+              ) : isCurrentPlan ? (
+                <Link
+                  href="/dashboard/profile"
+                  className="mt-6 flex h-10 w-full items-center justify-center rounded-none text-sm font-medium border border-amber-500/50 bg-amber-500/10 text-amber-200 transition-colors hover:border-amber-400/60 hover:bg-amber-500/20"
+                >
+                  Current plan
+                </Link>
+              ) : hasActivePaidPlan ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setChangePlanTarget(plan.id as "starter" | "pro" | "business");
+                    setChangePlanModalOpen(true);
+                  }}
+                  disabled={changingPlanId !== null}
+                  className={`mt-6 flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-none text-sm font-medium transition-colors ${
+                    plan.featured
+                      ? "bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-70"
+                      : "border border-white/20 bg-white/5 text-white hover:bg-white/10 disabled:opacity-70"
+                  }`}
+                >
+                  {changingPlanId === plan.id ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Changing…
+                    </>
+                  ) : (
+                    `Change to ${plan.name}`
+                  )}
+                </button>
               ) : (
                 <button
                   type="button"
@@ -227,7 +332,8 @@ export function PricingContent({ showCta = true }: { showCta?: boolean }) {
                 </button>
               )}
             </div>
-          ))}
+          );
+          })}
         </div>
       </section>
 
@@ -308,6 +414,25 @@ export function PricingContent({ showCta = true }: { showCta?: boolean }) {
         onOpenChange={setPlanModalOpen}
         variant={planModalVariant}
         planName={planModalPlanName}
+      />
+
+      <ChangePlanModal
+        open={changePlanModalOpen}
+        onOpenChange={(open) => {
+          setChangePlanModalOpen(open);
+          if (!open) {
+            setChangePlanTarget(null);
+            setPreviewAmount(null);
+            setPreviewError(null);
+          }
+        }}
+        currentPlanName={PLANS.find((p) => p.id === currentPlanId)?.name ?? "Current"}
+        targetPlanName={changePlanTarget ? PLANS.find((p) => p.id === changePlanTarget)?.name ?? "" : ""}
+        preview={previewAmount}
+        previewLoading={previewLoading}
+        previewError={!!previewError}
+        changing={changingPlanId !== null}
+        onConfirm={() => changePlanTarget && handleChangePlan(changePlanTarget)}
       />
     </>
   );

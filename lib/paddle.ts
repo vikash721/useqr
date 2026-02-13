@@ -1,18 +1,34 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import type { PlanSlug } from "@/lib/db/schemas/user";
 
+const PADDLE_PRICE_IDS = {
+  get starter() {
+    return process.env.PADDLE_PRICE_ID_STARTER ?? process.env.PADDLE_VENDOR_ID ?? "";
+  },
+  get pro() {
+    return process.env.PADDLE_PRICE_ID_PRO ?? "";
+  },
+  get business() {
+    return process.env.PADDLE_PRICE_ID_BUSINESS ?? "";
+  },
+} as const;
+
 /**
  * Map a Paddle price ID to our plan slug. Used by the webhook to set user plan.
  */
 export function priceIdToPlanSlug(priceId: string): PlanSlug | null {
-  const starter =
-    process.env.PADDLE_PRICE_ID_STARTER ?? process.env.PADDLE_VENDOR_ID ?? "";
-  const pro = process.env.PADDLE_PRICE_ID_PRO ?? "";
-  const business = process.env.PADDLE_PRICE_ID_BUSINESS ?? "";
-  if (priceId === starter) return "starter";
-  if (priceId === pro) return "pro";
-  if (priceId === business) return "business";
+  if (priceId === PADDLE_PRICE_IDS.starter) return "starter";
+  if (priceId === PADDLE_PRICE_IDS.pro) return "pro";
+  if (priceId === PADDLE_PRICE_IDS.business) return "business";
   return null;
+}
+
+/**
+ * Get Paddle price ID for a plan slug. Used by change-plan API.
+ */
+export function planSlugToPriceId(plan: "starter" | "pro" | "business"): string | null {
+  const id = PADDLE_PRICE_IDS[plan];
+  return id && id.length > 0 ? id : null;
 }
 
 /**

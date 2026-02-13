@@ -20,7 +20,7 @@ Use this checklist before taking payments live. Your app uses **Paddle** for bil
 | Step | Where | What to do |
 |------|--------|------------|
 | **2.1** | Paddle → **Developer tools** → **Notifications** → **Add destination** | Add your production webhook URL: `https://YOUR_DOMAIN.com/api/webhooks/paddle` |
-| **2.2** | Same screen | Subscribe **only** to these three (your code only handles these): `subscription.created`, `subscription.updated`, `subscription.canceled`. Leave other events unsubscribed. |
+| **2.2** | Same screen | Subscribe to: `subscription.created`, `subscription.updated`, `subscription.canceled` (plan + subscription storage), and `transaction.completed` (payment history in profile). Leave other events unsubscribed unless you need them. |
 | **2.3** | Paddle → Notifications → your destination | Copy the **Endpoint secret** (or “Signing secret”). Set `PADDLE_WEBHOOK_SECRET` in production env. Without this, the webhook returns 500 and user plans won’t update after payment. |
 
 **New destination form — what to enter:**
@@ -43,7 +43,7 @@ Set these in your production host (Vercel, etc.):
 |----------|------------------------|--------|
 | `NEXT_PUBLIC_APP_URL` | Yes | `https://yourdomain.com` (no trailing slash). Used in links, sitemap, etc. |
 | `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` | Yes | Production client token from Paddle (no `test_`). |
-| `PADDLE_API_KEY` | Optional* | Production API key if you use Paddle API. |
+| `PADDLE_API_KEY` | **Yes** (for cancel) | Production API key. Required for “Cancel subscription” in profile; optional if you never call Paddle API. |
 | `PADDLE_WEBHOOK_SECRET` | **Yes** | Endpoint secret from Paddle webhook destination. |
 | `PADDLE_PRICE_ID_STARTER` | Yes | `pri_...` for Starter. |
 | `PADDLE_PRICE_ID_PRO` | Yes | `pri_...` for Pro. |

@@ -4,18 +4,29 @@ import { useUser } from "@clerk/nextjs";
 import {
   Calendar,
   Camera,
+  CreditCard,
   Loader2,
   Mail,
   Shield,
   User,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { usersApi } from "@/lib/api";
+import type { PaymentTransactionSummary, SubscriptionSummary } from "@/lib/api/users";
 import { toast } from "@/lib/toast";
 import { useUserStore } from "@/stores/useUserStore";
 import { cn } from "@/lib/utils";
@@ -40,6 +51,26 @@ function formatDate(iso?: string) {
   }
 }
 
+function formatDateShort(iso?: string) {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return "—";
+  }
+}
+
+function formatAmount(cents: number, currencyCode: string) {
+  const value = (cents / 100).toFixed(2);
+  const symbol = currencyCode === "USD" ? "$" : currencyCode === "EUR" ? "€" : currencyCode === "GBP" ? "£" : "";
+  return symbol ? `${symbol}${value}` : `${value} ${currencyCode}`;
+}
+
 export default function ProfilePage() {
   const { user: clerkUser, isLoaded: clerkLoaded } = useUser();
   const storeUser = useUserStore((s) => s.user);
@@ -51,6 +82,79 @@ export default function ProfilePage() {
   const [savingName, setSavingName] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [subscription, setSubscription] = useState<SubscriptionSummary | null | undefined>(undefined);
+  const [transactions, setTransactions] = useState<PaymentTransactionSummary[]>([]);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [canceling, setCanceling] = useState(false);
+  const [removingCancel, setRemovingCancel] = useState(false);
+
+  useEffect(() => {
+    if (!storeUser?.clerkId) {
+      setSubscriptionLoading(false);
+      return;
+    }
+    usersApi
+      .getSubscription()
+      .then((data) => {
+        setSubscription(data.subscription);
+        setTransactions(data.transactions ?? []);
+      })
+      .catch(() => {
+        setSubscription(null);
+        setTransactions([]);
+      })
+      .finally(() => setSubscriptionLoading(false));
+  }, [storeUser?.clerkId]);
+
+  const handleCancelSubscription = async () => {
+    setCanceling(true);
+    try {
+      const data = await usersApi.cancelSubscription();
+      toast.success(data.message);
+      setCancelDialogOpen(false);
+      const updated = await usersApi.getSubscription();
+      setSubscription(updated.subscription);
+      if (data.alreadyScheduled !== true) {
+        await usersApi.sync().then((d) => d?.ok && d.user && setUser({
+          clerkId: d.user.clerkId,
+          email: d.user.email ?? null,
+          name: d.user.name ?? null,
+          imageUrl: d.user.imageUrl ?? null,
+          plan: d.user.plan,
+          createdAt: d.user.createdAt,
+        }));
+      }
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        (err instanceof Error ? err.message : "Failed to cancel subscription");
+      toast.error(message);
+      const updated = await usersApi.getSubscription().catch(() => null);
+      if (updated?.subscription) setSubscription(updated.subscription);
+    } finally {
+      setCanceling(false);
+    }
+  };
+
+  const handleRemoveScheduledCancel = async () => {
+    setRemovingCancel(true);
+    try {
+      const data = await usersApi.removeScheduledCancel();
+      toast.success(data.message);
+      const updated = await usersApi.getSubscription();
+      setSubscription(updated.subscription);
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        (err instanceof Error ? err.message : "Failed to remove cancellation");
+      toast.error(message);
+      const updated = await usersApi.getSubscription().catch(() => null);
+      if (updated?.subscription) setSubscription(updated.subscription);
+    } finally {
+      setRemovingCancel(false);
+    }
+  };
 
   const isLoading = !clerkLoaded || storeUser === null;
   const displayName =
@@ -335,6 +439,163 @@ export default function ProfilePage() {
               />
             </div>
           </div>
+
+          {/* Subscription & billing */}
+          <div className="mt-8">
+            <h2 className="mb-4 text-lg font-semibold tracking-tight text-foreground">
+              Subscription & billing
+            </h2>
+            <div className="rounded-xl border border-border bg-card shadow-sm ring-1 ring-border/50">
+              {subscriptionLoading || (!!storeUser?.clerkId && subscription === undefined) ? (
+                <div className="flex items-center gap-4 px-6 py-8 sm:px-8">
+                  <Skeleton className="h-9 w-9 rounded-lg" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-48 rounded" />
+                    <Skeleton className="h-4 w-64 rounded" />
+                  </div>
+                </div>
+              ) : subscription && subscription.status !== "canceled" ? (
+                <div className="divide-y divide-border">
+                  <div className="flex flex-col gap-2 px-6 py-4 sm:px-8 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/60 text-muted-foreground">
+                        <CreditCard className="size-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          {formatPlan(subscription.plan)} plan
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {subscription.scheduledChangeEffectiveAt
+                            ? `Auto cancel on ${formatDateShort(subscription.scheduledChangeEffectiveAt)}`
+                            : subscription.currentPeriodEnd
+                              ? `Renews on ${formatDateShort(subscription.currentPeriodEnd)}`
+                              : "Active"}
+                        </p>
+                      </div>
+                    </div>
+                    {!subscription.scheduledChangeEffectiveAt ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-red-500/30 text-red-500 hover:bg-red-500/10 hover:text-red-400"
+                        onClick={() => setCancelDialogOpen(true)}
+                      >
+                        <XCircle className="mr-1.5 size-4" />
+                        Cancel subscription
+                      </Button>
+                    ) : (
+                      <div className="flex flex-col items-start gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          Cancellation scheduled · {formatDateShort(subscription.scheduledChangeEffectiveAt ?? undefined)}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-500"
+                          onClick={handleRemoveScheduledCancel}
+                          disabled={removingCancel}
+                        >
+                          {removingCancel ? (
+                            <Loader2 className="mr-1.5 size-4 animate-spin" />
+                          ) : null}
+                          Keep my subscription
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  {transactions.length > 0 && (
+                    <div className="px-6 py-4 sm:px-8">
+                      <p className="mb-3 text-xs font-medium text-muted-foreground">
+                        Payment history
+                      </p>
+                      <div className="overflow-x-auto rounded-lg border border-border">
+                        <table className="w-full min-w-[320px] text-sm">
+                          <thead>
+                            <tr className="border-b border-border bg-muted/30">
+                              <th className="px-3 py-2 text-left font-medium text-muted-foreground">
+                                Date
+                              </th>
+                              <th className="px-3 py-2 text-left font-medium text-muted-foreground">
+                                Amount
+                              </th>
+                              <th className="px-3 py-2 text-left font-medium text-muted-foreground">
+                                Status
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {transactions.map((t) => (
+                              <tr key={t.transactionId} className="border-b border-border/50 last:border-0">
+                                <td className="px-3 py-2 text-foreground">
+                                  {formatDateShort(t.billedAt)}
+                                </td>
+                                <td className="px-3 py-2 font-medium text-foreground">
+                                  {formatAmount(t.amount, t.currencyCode)}
+                                </td>
+                                <td className="px-3 py-2 capitalize text-muted-foreground">
+                                  {t.status}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-4 px-6 py-6 sm:px-8">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/60 text-muted-foreground">
+                    <CreditCard className="size-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {subscription?.status === "canceled"
+                        ? "Subscription canceled"
+                        : "No active subscription"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {subscription?.status === "canceled" && subscription?.canceledAt
+                        ? `Canceled on ${formatDateShort(subscription.canceledAt)}. `
+                        : ""}
+                      Upgrade to get more QR codes and features.
+                    </p>
+                    <Link
+                      href="/dashboard/pricing"
+                      className="mt-2 inline-block text-sm font-medium text-emerald-500 hover:text-emerald-400"
+                    >
+                      View plans →
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+            <DialogContent className="border-border bg-card text-foreground">
+              <DialogHeader>
+                <DialogTitle>Cancel subscription</DialogTitle>
+                <DialogDescription>
+                  Your subscription will end at the end of your current billing period.
+                  You&apos;ll keep access until then.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setCancelDialogOpen(false)} disabled={canceling}>
+                  Keep subscription
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleCancelSubscription}
+                  disabled={canceling}
+                >
+                  {canceling ? <Loader2 className="size-4 animate-spin" /> : "Cancel at period end"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
             Name and photo are saved to your account and synced everywhere you
