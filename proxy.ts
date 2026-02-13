@@ -5,8 +5,8 @@ const isDashboard = createRouteMatcher(["/dashboard(.*)"]);
 const isManageUsers = createRouteMatcher(["/manage-users(.*)"]);
 /** Landing page and auth pages — redirect to /dashboard if already signed in */
 const isLandingOrAuth = createRouteMatcher(["/", "/login", "/signup", "/forgot-password"]);
-/** Clerk webhook — must be public (no auth); Clerk sends server-to-server POST */
-const isWebhook = createRouteMatcher(["/api/webhooks/clerk"]);
+/** Webhooks — must be public (no auth); external services send server-to-server POST */
+const isWebhook = createRouteMatcher(["/api/webhooks/clerk", "/api/webhooks/paddle"]);
 
 /**
  * - Signed in + visiting /, /login, or /signup → redirect to /dashboard

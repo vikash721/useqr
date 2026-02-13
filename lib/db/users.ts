@@ -131,3 +131,21 @@ export async function deleteUserByClerkId(clerkId: string): Promise<boolean> {
   const result = await coll.deleteOne({ clerkId });
   return (result.deletedCount ?? 0) > 0;
 }
+
+/**
+ * Update user plan by Clerk id (e.g. from Paddle webhook). Returns the updated user or null if not found.
+ */
+export async function updateUserPlanByClerkId(
+  clerkId: string,
+  plan: PlanSlug
+): Promise<UserDocument | null> {
+  const db = await getDb();
+  const coll = db.collection<UserDocument>(USERS_COLLECTION);
+  const now = new Date();
+  const result = await coll.findOneAndUpdate(
+    { clerkId },
+    { $set: { plan, updatedAt: now } },
+    { returnDocument: "after" }
+  );
+  return (result as UserDocument | null) ?? null;
+}

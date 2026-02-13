@@ -1,9 +1,14 @@
 "use client";
 
+import { useUser } from "@clerk/nextjs";
 import { Check, Minus } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PlanThankYouModal } from "@/components/modals";
+import { PADDLE_CHECKOUT_COMPLETED_EVENT, usePaddle } from "@/components/providers/PaddleProvider";
+import { usersApi } from "@/lib/api";
+import { toast } from "@/lib/toast";
+import { useUserStore } from "@/stores/useUserStore";
 
 const PLANS = [
   {
@@ -20,7 +25,7 @@ const PLANS = [
     id: "starter",
     name: "Starter",
     description: "A little more for personal use",
-    price: "$2",
+    price: "$4.99",
     period: "/month",
     cta: "Get Starter",
     href: "#",
@@ -30,7 +35,7 @@ const PLANS = [
     id: "pro",
     name: "Pro",
     description: "For creators and small teams",
-    price: "$5",
+    price: "$11.99",
     period: "/month",
     cta: "Get Pro",
     href: "#",
@@ -40,7 +45,7 @@ const PLANS = [
     id: "business",
     name: "Business",
     description: "For teams and organizations",
-    price: "$29",
+    price: "$29.99",
     period: "/month",
     cta: "Get Business",
     href: "#",
@@ -96,6 +101,65 @@ function CellContent({ value }: { value: FeatureValue }) {
  */
 export function PricingContent({ showCta = true }: { showCta?: boolean }) {
   const [planModalOpen, setPlanModalOpen] = useState(false);
+  const [planModalVariant, setPlanModalVariant] = useState<"success" | "coming_soon">("coming_soon");
+  const [planModalPlanName, setPlanModalPlanName] = useState<string | undefined>();
+  const lastOpenedPlanRef = useRef<"starter" | "pro" | "business" | null>(null);
+  const { openCheckout } = usePaddle();
+  const { user } = useUser();
+  const setUser = useUserStore((s) => s.setUser);
+
+  useEffect(() => {
+    const onCheckoutCompleted = async () => {
+      const planId = lastOpenedPlanRef.current;
+      const planName = planId ? PLANS.find((p) => p.id === planId)?.name : undefined;
+      setPlanModalPlanName(planName);
+      setPlanModalVariant("success");
+      setPlanModalOpen(true);
+      const updateStoreFromSync = (data: Awaited<ReturnType<typeof usersApi.sync>>) => {
+        if (data?.ok && data.user) {
+          setUser({
+            clerkId: data.user.clerkId,
+            email: data.user.email ?? null,
+            name: data.user.name ?? null,
+            imageUrl: data.user.imageUrl ?? null,
+            plan: data.user.plan,
+            createdAt: data.user.createdAt,
+          });
+        }
+      };
+      try {
+        updateStoreFromSync(await usersApi.sync());
+        // Webhook may still be in flight; refetch after a short delay so the store shows the updated plan.
+        setTimeout(async () => {
+          try {
+            updateStoreFromSync(await usersApi.sync());
+          } catch {
+            // ignore
+          }
+        }, 2500);
+      } catch {
+        toast.error("Could not refresh your plan. Please refresh the page.");
+      } finally {
+        lastOpenedPlanRef.current = null;
+      }
+    };
+    window.addEventListener(PADDLE_CHECKOUT_COMPLETED_EVENT, onCheckoutCompleted);
+    return () => window.removeEventListener(PADDLE_CHECKOUT_COMPLETED_EVENT, onCheckoutCompleted);
+  }, [setUser]);
+
+  const handlePaidPlanClick = async (planId: "starter" | "pro" | "business") => {
+    lastOpenedPlanRef.current = planId;
+    const opened = await openCheckout(planId, {
+      clerkId: user?.id,
+      email: user?.primaryEmailAddress?.emailAddress ?? undefined,
+    });
+    if (!opened) {
+      lastOpenedPlanRef.current = null;
+      setPlanModalVariant("coming_soon");
+      setPlanModalPlanName(undefined);
+      setPlanModalOpen(true);
+    }
+  };
 
   return (
     <>
@@ -150,7 +214,9 @@ export function PricingContent({ showCta = true }: { showCta?: boolean }) {
               ) : (
                 <button
                   type="button"
-                  onClick={() => setPlanModalOpen(true)}
+                  onClick={() =>
+                    handlePaidPlanClick(plan.id as "starter" | "pro" | "business")
+                  }
                   className={`mt-6 cursor-pointer flex h-10 w-full items-center justify-center rounded-none text-sm font-medium transition-colors ${
                     plan.featured
                       ? "bg-emerald-500 text-white hover:bg-emerald-600"
@@ -237,7 +303,12 @@ export function PricingContent({ showCta = true }: { showCta?: boolean }) {
         </section>
       )}
 
-      <PlanThankYouModal open={planModalOpen} onOpenChange={setPlanModalOpen} />
+      <PlanThankYouModal
+        open={planModalOpen}
+        onOpenChange={setPlanModalOpen}
+        variant={planModalVariant}
+        planName={planModalPlanName}
+      />
     </>
   );
 }

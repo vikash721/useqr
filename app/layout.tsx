@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ConditionalSidebarLayout } from "@/components/ConditionalSidebarLayout";
 import { AMThanksModal } from "@/components/modals";
 import { ClerkProvider } from "@/components/providers/ClerkProvider";
+import { PaddleProvider } from "@/components/providers/PaddleProvider";
 import { Toaster } from "@/components/Toaster";
 import { UserSyncOnMount } from "@/components/UserSyncOnMount";
 import { VisitTelegramNotify } from "@/components/VisitTelegramNotify";
@@ -118,13 +119,15 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         <ClerkProvider>
-          <UserSyncOnMount />
-          <VisitTelegramNotify />
+          <PaddleProvider>
+            <UserSyncOnMount />
+            <VisitTelegramNotify />
           <Suspense fallback={null}>
             <AMThanksModal />
           </Suspense>
           <ConditionalSidebarLayout>{children}</ConditionalSidebarLayout>
-          <Toaster />
+            <Toaster />
+          </PaddleProvider>
         </ClerkProvider>
       </body>
     </html>

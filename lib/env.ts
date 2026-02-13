@@ -24,6 +24,18 @@ const serverEnvSchema = z.object({
   IMAGEKIT_PUBLIC_KEY: z.string().min(1).optional(),
   /** ImageKit private key. Required for server-side uploads in /api/upload. */
   IMAGEKIT_PRIVATE_KEY: z.string().min(1).optional(),
+  /** Paddle API key (server-only). For Paddle Billing API and webhooks. */
+  PADDLE_API_KEY: z.string().min(1).optional(),
+  /** Paddle webhook signing secret. Required for /api/webhooks/paddle. */
+  PADDLE_WEBHOOK_SECRET: z.string().min(1).optional(),
+  /** Paddle Starter plan price ID (pri_...). Used for checkout and webhook mapping. */
+  PADDLE_PRICE_ID_STARTER: z.string().min(1).optional(),
+  /** Paddle Pro plan price ID. Optional until you create the product in Paddle. */
+  PADDLE_PRICE_ID_PRO: z.string().min(1).optional(),
+  /** Paddle Business plan price ID. Optional until you create the product in Paddle. */
+  PADDLE_PRICE_ID_BUSINESS: z.string().min(1).optional(),
+  /** Paddle client-side token (exposed to browser). Required for Paddle checkout to load. */
+  NEXT_PUBLIC_PADDLE_CLIENT_TOKEN: z.string().min(1).optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
