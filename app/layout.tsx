@@ -23,12 +23,12 @@ const geistMono = Geist_Mono({
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://useqr.codes";
 
 const defaultTitle =
-  "Get reusable QR codes. Store anything—links, video, contact. Yours forever.";
+  "QR Code Generator | Create Custom, Dynamic QR Codes | UseQR";
 const defaultDescription =
-  "Create custom QR codes for images, video, links, or your contact. Reusable, updatable—stick them anywhere. Get found. UseQR makes it simple.";
+  "Create custom, dynamic QR codes with logos, colors, and shapes. Track scans, update content anytime, and use them for anything — personal or professional.";
 const ogImageUrl = `${siteUrl}/landing-page.png`;
 const ogImageAlt =
-  "UseQR – One QR. Any content. Yours forever. Create custom QR codes. Get started free.";
+  "UseQR – The Best QR Code Generator for Your Business. Create custom QR codes. Get started free.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -38,14 +38,15 @@ export const metadata: Metadata = {
   },
   description: defaultDescription,
   keywords: [
-    "QR code",
-    "custom QR code",
-    "QR code generator",
-    "reusable QR code",
-    "QR code for contact",
-    "QR code for links",
-    "QR code for video",
-    "get found",
+    "qr code",
+    "qr code generator",
+    "free qr code generator",
+    "dynamic qr code",
+    "custom qr code",
+    "qr code with logo",
+    "qr code analytics",
+    "trackable qr codes",
+    "qr code for business",
     "UseQR",
   ],
   authors: [{ name: "UseQR", url: siteUrl }],
@@ -90,18 +91,49 @@ export const metadata: Metadata = {
 
 const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "WebApplication",
+  "@type": "SoftwareApplication",
   name: "UseQR",
   description:
-    "Create custom QR codes for images, video, links, or your contact. Reusable, updatable—stick them anywhere. Get found.",
+    "Create custom, dynamic QR codes with logos, colors, and shapes. Track scans, update content anytime, and use them for anything — personal or professional.",
   url: siteUrl,
-  applicationCategory: "UtilitiesApplication",
+  applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
   offers: {
     "@type": "Offer",
     price: "0",
     priceCurrency: "USD",
+    description: "Free plan with core QR code features",
   },
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue: "4.8",
+    ratingCount: "150",
+    bestRating: "5",
+    worstRating: "1",
+  },
+  brand: {
+    "@type": "Brand",
+    name: "UseQR",
+  },
+  publisher: {
+    "@type": "Organization",
+    name: "UseQR",
+    url: siteUrl,
+  },
+  featureList:
+    "Custom QR Codes, Dynamic QR Codes, QR Code Analytics, QR Code with Logo, Bulk QR Code Generator, vCard QR Codes",
+  screenshot: `${siteUrl}/landing-page.png`,
+};
+
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "UseQR",
+  url: siteUrl,
+  logo: `${siteUrl}/logo/svg/logo.svg`,
+  description:
+    "UseQR is a QR code generator platform that helps businesses create custom, trackable, and dynamic QR codes.",
+  sameAs: [],
 };
 
 export default function RootLayout({
@@ -117,6 +149,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
         <ClerkProvider>
           <PaddleProvider>

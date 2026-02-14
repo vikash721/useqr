@@ -69,7 +69,7 @@ export default function CardThankYou({ qrId }: Props) {
         >
           <img
             src="/logo/svg/logo.svg"
-            alt=""
+            alt="UseQR logo"
             className="h-5 w-5 shrink-0 opacity-90"
           />
           <span className="text-lg font-semibold tracking-tight text-white">

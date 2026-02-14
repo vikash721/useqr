@@ -22,6 +22,8 @@ export function getPostContent(slug: string): ReactNode {
   if (!post) return null;
 
   switch (slug) {
+    case "10-creative-ways-to-use-qr-codes-in-marketing":
+      return <CreativeQRMarketingContent />;
     case "dynamic-vs-static-qr-codes":
       return <DynamicVsStaticContent />;
     case "qr-code-business-card-contact":
@@ -31,6 +33,117 @@ export function getPostContent(slug: string): ReactNode {
     default:
       return null;
   }
+}
+
+function CreativeQRMarketingContent() {
+  return (
+    <Prose>
+      <p>
+        QR codes have become a powerful bridge between the physical and digital
+        worlds. Whether you&apos;re running a small business or managing
+        enterprise campaigns, a well-placed QR code can drive traffic, boost
+        engagement, and create memorable customer experiences. Here are ten
+        creative ways to put QR codes to work in your marketing.
+      </p>
+
+      <h2>1. Product packaging that tells a story</h2>
+      <p>
+        Add a QR code to your product packaging that links to a video showing
+        how the product is made, sourced, or best used. Customers get richer
+        context, and you get a chance to build brand loyalty beyond the shelf.
+        With a <strong>dynamic QR code</strong>, you can swap the video for
+        seasonal content or updated tutorials without changing the packaging.
+      </p>
+
+      <h2>2. Interactive restaurant menus</h2>
+      <p>
+        Replace or supplement printed menus with a QR code on each table. Diners
+        scan and see your full menu with photos, allergen info, and daily
+        specials. Update prices or items instantly from your dashboard—no
+        reprinting needed. This is one of the most popular
+        <strong> QR code use cases</strong> in hospitality.
+      </p>
+
+      <h2>3. Event check-in and engagement</h2>
+      <p>
+        Use QR codes on event tickets or badges for instant check-in. Beyond
+        entry, link attendees to schedules, speaker bios, feedback forms, or
+        exclusive content. Track scan data to see which sessions are generating
+        the most interest and adjust your event strategy in real time.
+      </p>
+
+      <h2>4. Business cards that never go out of date</h2>
+      <p>
+        A <strong>vCard QR code</strong> on your business card lets people save
+        your contact details with one scan. Use a dynamic code so you can update
+        your phone number, email, or job title without ordering new cards.
+        It&apos;s networking, modernized.
+      </p>
+
+      <h2>5. Print ads with measurable results</h2>
+      <p>
+        Traditional print advertising—magazines, flyers, billboards—has always
+        struggled with attribution. Add a QR code that links to a dedicated
+        landing page and you can track exactly how many people engaged with your
+        ad. Use <strong>QR code analytics</strong> to measure impressions,
+        scans, and conversions from every placement.
+      </p>
+
+      <h2>6. Loyalty programs and coupons</h2>
+      <p>
+        Place QR codes on receipts, shopping bags, or in-store displays that
+        link to loyalty sign-ups, discount codes, or exclusive offers. Customers
+        get instant value, and you capture leads and build your CRM database.
+        Rotate offers by updating the QR destination—same code, fresh deals.
+      </p>
+
+      <h2>7. Real estate listings</h2>
+      <p>
+        Put a QR code on &quot;For Sale&quot; signs, flyers, or window displays.
+        Prospective buyers scan and get instant access to a virtual tour, floor
+        plans, pricing details, and your contact information. It turns a passive
+        sign into an interactive listing and captures leads 24/7.
+      </p>
+
+      <h2>8. Social media growth</h2>
+      <p>
+        Create a QR code that links to your social media profiles or a
+        &quot;link-in-bio&quot; page. Place it on packaging, business cards,
+        receipts, or at your counter. It&apos;s a frictionless way to convert
+        offline interactions into online followers. Track which physical
+        placements drive the most follows.
+      </p>
+
+      <h2>9. Feedback and reviews</h2>
+      <p>
+        Make it easy for customers to leave feedback by placing a QR code on
+        receipts, packaging, or at checkout that links directly to a review form
+        or your Google Business listing. The fewer steps between &quot;I had a
+        great experience&quot; and &quot;I left a review,&quot; the more reviews
+        you&apos;ll collect. Positive reviews also improve your local SEO.
+      </p>
+
+      <h2>10. Educational and how-to content</h2>
+      <p>
+        Link QR codes on products, manuals, or in-store displays to how-to
+        videos, setup guides, or FAQs. This reduces support requests and
+        improves customer satisfaction. For example, a furniture company can
+        place a QR code on the box that links to an assembly video.
+      </p>
+
+      <h2>Make your QR codes work harder</h2>
+      <p>
+        The key to success with QR code marketing is making every scan
+        worthwhile. Use <strong>custom QR codes with your logo</strong> and
+        brand colors so they&apos;re recognizable. Always add a short
+        call-to-action near the code—&quot;Scan for 20% off,&quot; &quot;Scan
+        to watch,&quot; or &quot;Scan to save my contact.&quot; And use a
+        platform like <strong>UseQR</strong> that gives you dynamic codes,
+        real-time analytics, and the ability to update your content without
+        reprinting. One code, endless possibilities.
+      </p>
+    </Prose>
+  );
 }
 
 function DynamicVsStaticContent() {

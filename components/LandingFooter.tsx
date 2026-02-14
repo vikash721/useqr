@@ -40,7 +40,7 @@ export function LandingFooter() {
             >
               <Image
                 src="/logo/svg/logo.svg"
-                alt="UseQR"
+                alt="UseQR - Dynamic QR Code Platform"
                 width={28}
                 height={28}
                 className="size-7 shrink-0"

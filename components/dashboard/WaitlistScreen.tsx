@@ -273,7 +273,7 @@ export function WaitlistScreen() {
                             {row.imageUrl ? (
                               <img
                                 src={row.imageUrl}
-                                alt=""
+                                alt="Waitlist user avatar"
                                 className="size-full object-cover"
                               />
                             ) : (

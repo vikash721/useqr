@@ -288,7 +288,7 @@ export default function ProfilePage() {
                     ) : avatarUrl ? (
                       <img
                         src={avatarUrl}
-                        alt=""
+                        alt="User profile photo"
                         className="size-20 rounded-full object-cover"
                       />
                     ) : (

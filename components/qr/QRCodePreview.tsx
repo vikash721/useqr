@@ -89,7 +89,7 @@ export function QRCodePreview({
     // eslint-disable-next-line @next/next/no-img-element -- QR is a dynamic blob URL from canvas
     <img
       src={dataUrl}
-      alt="QR code preview"
+      alt="Custom QR code preview - UseQR"
       width={size}
       height={size}
       className={cn("rounded-lg border border-border bg-white object-contain", className)}

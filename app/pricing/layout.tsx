@@ -3,13 +3,21 @@ import type { Metadata } from "next";
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://useqr.codes";
 
 export const metadata: Metadata = {
-  title: "Pricing",
+  title: "QR Code Generator Pricing – Free, Pro & Business Plans",
   description:
-    "UseQR pricing plans: Free, Pro, and Business. Create custom QR codes for links, images, video, or your contact. Compare features and choose the right plan.",
+    "Compare UseQR pricing plans. Get started free or unlock advanced features like QR code analytics, bulk generation, and custom branding with Pro and Business.",
+  keywords: [
+    "QR code pricing",
+    "QR code generator price",
+    "free QR code generator",
+    "QR code plans",
+    "UseQR pricing",
+    "dynamic QR code pricing",
+  ],
   openGraph: {
-    title: "Pricing | UseQR – One QR. Any content. Yours forever.",
+    title: "QR Code Generator Pricing – Free, Pro & Business Plans | UseQR",
     description:
-      "Compare UseQR plans. Free, Pro, and Business tiers for custom QR codes. Choose the right plan for your needs.",
+      "Compare UseQR pricing plans. Get started free or unlock advanced features like QR code analytics, bulk generation, and custom branding.",
     url: `${siteUrl}/pricing`,
     type: "website",
   },

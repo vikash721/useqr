@@ -15,10 +15,10 @@ export function DesignsContent({ showCta = true }: { showCta?: boolean }) {
       <section className="w-full border-b border-white/10 bg-black px-6 py-20 lg:py-28">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
-            Design your QR
+            Design your <span className="text-emerald-400">QR Code</span>
           </h1>
           <p className="mt-4 text-lg text-zinc-400">
-            Colors, shapes, optional logo—and physical styles for print.
+            Add your brand colors, logo, and unique shapes. Order print-ready stickers, cards, and signage.
           </p>
         </div>
       </section>
@@ -34,7 +34,7 @@ export function DesignsContent({ showCta = true }: { showCta?: boolean }) {
               <Palette className="size-5 text-emerald-400" aria-hidden />
             </div>
             <h2 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
-              Colors & shapes
+              QR Code Colors & Shapes
             </h2>
           </div>
           <p className="mt-4 leading-relaxed text-zinc-400">
@@ -54,7 +54,7 @@ export function DesignsContent({ showCta = true }: { showCta?: boolean }) {
               <ImagePlus className="size-5 text-emerald-400" aria-hidden />
             </div>
             <h2 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
-              Add your logo
+              Add Your Logo to a QR Code
             </h2>
           </div>
           <p className="mt-4 leading-relaxed text-zinc-400">

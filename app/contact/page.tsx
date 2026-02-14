@@ -28,10 +28,10 @@ export default function ContactPage() {
             <section className="w-full border-b border-white/10 bg-black px-6 py-20 lg:py-28">
               <div className="mx-auto max-w-2xl text-center">
                 <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
-                  Contact <span className="text-emerald-400">Us</span>
+                  Contact <span className="text-emerald-400">UseQR</span>
                 </h1>
                 <p className="mt-4 text-lg text-zinc-400">
-                  Get in touch. We&apos;re here to help.
+                  Questions about our QR code generator? We&apos;re here to help.
                 </p>
               </div>
             </section>

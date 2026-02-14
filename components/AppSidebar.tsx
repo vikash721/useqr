@@ -211,7 +211,7 @@ export function AppSidebar() {
                   ) : avatarUrl ? (
                     <img
                       src={avatarUrl}
-                      alt=""
+                      alt="User avatar"
                       className={`size-9 shrink-0 rounded-full object-cover transition-[transform] duration-300 ease-out group-data-[collapsible=icon]:size-8 ${avatarPlanGlow}`}
                     />
                   ) : (

@@ -66,7 +66,7 @@ export function LandingHeader() {
         >
           <Image
             src="/logo/svg/logo.svg"
-            alt="UseQR"
+            alt="UseQR - QR Code Generator"
             width={28}
             height={28}
             className="size-7 shrink-0 transition-transform group-hover:scale-[1.02]"

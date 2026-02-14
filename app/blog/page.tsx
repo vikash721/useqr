@@ -28,10 +28,10 @@ export default function BlogPage() {
             <section className="w-full border-b border-white/10 bg-black px-6 py-20 lg:py-28">
               <div className="mx-auto max-w-3xl text-center">
                 <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
-                  Our <span className="text-emerald-400">Blogs</span>
+                  QR Code <span className="text-emerald-400">Blog</span>
                 </h1>
                 <p className="mt-4 text-lg text-zinc-400">
-                  QR code guides, best practices, and tips from the UseQR team.
+                  Guides, tips, and best practices for using QR codes effectively.
                 </p>
               </div>
             </section>

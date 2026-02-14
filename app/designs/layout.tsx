@@ -3,13 +3,21 @@ import type { Metadata } from "next";
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://useqr.codes";
 
 export const metadata: Metadata = {
-  title: "Design Your QR – Colors, Logo & Print Styles | UseQR",
+  title: "Custom QR Code Designs – Colors, Logos & Print Styles",
   description:
-    "Style your QR with colors, shapes, and optional logo. Order stickers, cards, labels, or signage—printed and delivered.",
+    "Design stunning custom QR codes with your brand colors, logo, and unique shapes. Order professional QR code stickers, cards, and signage — printed and delivered.",
+  keywords: [
+    "custom QR code design",
+    "QR code with logo",
+    "QR code colors",
+    "QR code stickers",
+    "branded QR code",
+    "QR code print",
+  ],
   openGraph: {
-    title: "Design Your QR | UseQR",
+    title: "Custom QR Code Designs – Colors, Logos & Print Styles | UseQR",
     description:
-      "Style your QR with colors, shapes, and optional logo. Order stickers, cards, labels, or signage.",
+      "Design stunning custom QR codes with your brand colors, logo, and unique shapes. Order professional QR code stickers, cards, and signage.",
     url: `${siteUrl}/designs`,
     type: "website",
   },

@@ -1,14 +1,58 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { Check, Loader2, Minus } from "lucide-react";
+import { Check, Loader2, Minus, Info } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { PlanThankYouModal, ChangePlanModal } from "@/components/modals";
 import { PADDLE_CHECKOUT_COMPLETED_EVENT, usePaddle } from "@/components/providers/PaddleProvider";
 import { usersApi } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { useUserStore } from "@/stores/useUserStore";
+
+function InfoTooltip({ text }: { text: string }) {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const handleMouseEnter = () => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setPosition({
+        top: rect.top - 10,
+        left: rect.left + rect.width / 2,
+      });
+    }
+    setShowTooltip(true);
+  };
+
+  return (
+    <div className="relative inline-flex">
+      <button
+        ref={buttonRef}
+        type="button"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={() => setShowTooltip(false)}
+        className="inline-flex items-center justify-center text-zinc-500 hover:text-emerald-400 transition-colors"
+      >
+        <Info className="size-4" strokeWidth={2} />
+      </button>
+      {showTooltip && (
+        <div
+          className="fixed px-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-xs text-zinc-200 whitespace-normal z-[9999] shadow-lg pointer-events-none max-w-xs break-words text-left"
+          style={{
+            top: `${position.top}px`,
+            left: `${position.left}px`,
+            transform: "translate(-50%, -100%)",
+          }}
+        >
+          {text}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const PLANS = [
   {
@@ -57,24 +101,30 @@ type FeatureValue = true | false | string;
 
 const FEATURES: {
   name: string;
+  tooltip?: string;
   free: FeatureValue;
   starter: FeatureValue;
   pro: FeatureValue;
   business: FeatureValue;
 }[] = [
-  { name: "QR codes included", free: "2", starter: "5", pro: "15", business: "Unlimited" },
+  { name: "QR codes included", free: "5", starter: "25", pro: "100", business: "500" },
   { name: "Links & text", free: true, starter: true, pro: true, business: true },
   { name: "Images & video", free: false, starter: true, pro: true, business: true },
-  { name: "Contact (vCard)", free: false, starter: false, pro: true, business: true },
-  { name: "Custom colors & logo", free: false, starter: false, pro: true, business: true },
-  { name: "Remove UseQR branding", free: false, starter: false, pro: true, business: true },
+  { name: "Get Found QR", tooltip: "Mark items as lost or found and let finders contact you by scanning the QR code", free: false, starter: true, pro: true, business: true },
+  { name: "Contact (vCard)", tooltip: "Digital contact cards that store name, phone, email, and more", free: false, starter: true, pro: true, business: true },
+  { name: "Custom colors & logo", free: true, starter: true, pro: true, business: true },
+  { name: "Remove UseQR branding", tooltip: "Hide UseQR watermark and use your own branding", free: false, starter: true, pro: true, business: true },
   { name: "Update content anytime", free: true, starter: true, pro: true, business: true },
-  { name: "Scan analytics", free: false, starter: false, pro: true, business: true },
+  { name: "Smart redirect (device)", tooltip: "Automatically redirect scanners to device-appropriate content (deep link to app, App Store / Play Store, or mobile web)", free: false, starter: true, pro: true, business: true },
+  { name: "Expiring QR", tooltip: "Set an expiration date/time for QR codes; expired codes automatically deactivate", free: false, starter: false, pro: true, business: true },
+  { name: "Scan analytics", tooltip: "Track and analyze QR code scans. Higher plans retain data longer", free: false, starter: "30 days", pro: "60 days", business: "180 days" },
+  { name: "CSV export", tooltip: "Export scan analytics as CSV for deeper analysis", free: false, starter: false, pro: true, business: true },
+  { name: "Geo-fenced QR", tooltip: "Restrict scans to a geographic area (radius or polygon). Useful for location-based campaigns and reducing fraudulent scans.", free: false, starter: false, pro: true, business: true },
   { name: "High-res download", free: true, starter: true, pro: true, business: true },
   { name: "Priority support", free: false, starter: false, pro: true, business: true },
-  { name: "Team members", free: false, starter: false, pro: "3", business: "Unlimited" },
-  { name: "SSO (SAML)", free: false, starter: false, pro: false, business: true },
-  { name: "Dedicated support", free: false, starter: false, pro: false, business: true },
+  { name: "Team members", tooltip: "Number of people who can access your account", free: "1", starter: "1", pro: "4", business: "10" },
+  { name: "SSO (SAML)", tooltip: "Single Sign-On for enterprise security and user management", free: false, starter: false, pro: false, business: true },
+  { name: "Dedicated support", tooltip: "Direct support channel with priority response times", free: false, starter: false, pro: false, business: true },
 ];
 
 function CellContent({ value }: { value: FeatureValue }) {
@@ -111,9 +161,10 @@ export function PricingContent({ showCta = true }: { showCta?: boolean }) {
   const [previewError, setPreviewError] = useState<string | null>(null);
   const lastOpenedPlanRef = useRef<"starter" | "pro" | "business" | null>(null);
   const { openCheckout } = usePaddle();
-  const { user } = useUser();
+  const { user, isSignedIn } = useUser();
   const setUser = useUserStore((s) => s.setUser);
   const storeUser = useUserStore((s) => s.user);
+  const router = useRouter();
 
   useEffect(() => {
     const onCheckoutCompleted = async () => {
@@ -185,6 +236,11 @@ export function PricingContent({ showCta = true }: { showCta?: boolean }) {
   }, [changePlanModalOpen, changePlanTarget]);
 
   const handlePaidPlanClick = async (planId: "starter" | "pro" | "business") => {
+    // Redirect to login if user is not signed in
+    if (!isSignedIn) {
+      router.push(`/login?redirect_url=${encodeURIComponent(`/pricing?plan=${planId}`)}`);
+      return;
+    }
     lastOpenedPlanRef.current = planId;
     const opened = await openCheckout(planId, {
       clerkId: user?.id,
@@ -236,7 +292,7 @@ export function PricingContent({ showCta = true }: { showCta?: boolean }) {
             Simple, transparent <span className="text-emerald-400">pricing</span>
           </h1>
           <p className="mt-4 text-lg text-zinc-400">
-            Choose the plan that fits. Upgrade or downgrade anytime.
+            Choose the plan that fits. Start free, upgrade anytime.
           </p>
         </div>
       </section>
@@ -368,7 +424,12 @@ export function PricingContent({ showCta = true }: { showCta?: boolean }) {
                       i % 2 === 0 ? "bg-transparent" : "bg-white/2"
                     }`}
                   >
-                    <td className="px-4 py-3.5 text-sm text-zinc-300">{row.name}</td>
+                    <td className="px-4 py-3.5 text-sm text-zinc-300">
+                      <div className="flex items-center gap-2">
+                        <span>{row.name}</span>
+                        {row.tooltip && <InfoTooltip text={row.tooltip} />}
+                      </div>
+                    </td>
                     <td className="px-4 py-3.5"><CellContent value={row.free} /></td>
                     <td className="px-4 py-3.5"><CellContent value={row.starter} /></td>
                     <td className="px-4 py-3.5 bg-emerald-500/5"><CellContent value={row.pro} /></td>

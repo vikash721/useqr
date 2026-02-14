@@ -29,7 +29,7 @@ export default function AboutPage() {
                   <span className="text-emerald-400">UseQR</span>
                 </h1>
                 <p className="mt-4 text-lg text-zinc-400">
-                  Custom QR codes that hold anything—and stay yours forever.
+                  The modern QR code platform — create, customize, and manage dynamic QR codes for any purpose.
                 </p>
               </div>
             </section>
@@ -38,7 +38,7 @@ export default function AboutPage() {
             <section className="w-full bg-black px-6 py-16 lg:py-24">
               <div className="mx-auto max-w-3xl">
                 <h2 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
-                  What is UseQR?
+                  What is UseQR? A Dynamic QR Code Platform
                 </h2>
                 <p className="mt-4 leading-relaxed text-zinc-400">
                   UseQR is a modern QR code platform built for people who want
@@ -47,7 +47,10 @@ export default function AboutPage() {
                   Every code is reusable—update the content behind it anytime
                   without changing the code or reprinting. Put your contact on
                   keys, bags, or gear so anyone who finds it can reach you. One
-                  code, any content, yours forever.
+                  code, any content, yours forever. Learn more in our{" "}
+                  <Link href="/blog" className="text-emerald-400 hover:text-emerald-300 transition-colors">
+                    QR code blog
+                  </Link>.
                 </p>
               </div>
             </section>
@@ -106,7 +109,10 @@ export default function AboutPage() {
                     <span>
                       <strong className="text-white">Customize.</strong> Style
                       your QR with colors, shapes, and optional logo. Download
-                      in high resolution for print.
+                      in high resolution for print.{" "}
+                      <Link href="/designs" className="text-emerald-400 hover:text-emerald-300 transition-colors">
+                        Explore design options
+                      </Link>.
                     </span>
                   </li>
                   <li className="flex gap-3">
@@ -135,7 +141,10 @@ export default function AboutPage() {
                   or signage—in the size and finish you need. We take care of
                   printing and shipping so you can focus on using your codes.
                   Create once online, then get physical QRs delivered to your
-                  door.
+                  door.{" "}
+                  <Link href="/pricing" className="text-emerald-400 hover:text-emerald-300 transition-colors">
+                    View pricing plans
+                  </Link>.
                 </p>
               </div>
             </section>

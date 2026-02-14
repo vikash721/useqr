@@ -2,6 +2,23 @@ import type { BlogPostMeta } from "./types";
 
 export const BLOG_POSTS: BlogPostMeta[] = [
   {
+    slug: "10-creative-ways-to-use-qr-codes-in-marketing",
+    title: "10 Creative Ways to Use QR Codes in Your Marketing",
+    description:
+      "Discover 10 innovative ways to use QR codes in your marketing campaigns to bridge the gap between physical and digital, and boost customer engagement.",
+    date: "2026-02-14",
+    author: "UseQR Team",
+    authorRole: "Marketing",
+    keywords: [
+      "qr code marketing",
+      "creative qr code ideas",
+      "qr code campaigns",
+      "marketing with qr codes",
+      "customer engagement",
+    ],
+    readingTimeMinutes: 8,
+  },
+  {
     slug: "dynamic-vs-static-qr-codes",
     title: "Dynamic vs Static QR Codes: Which Is Better for Your Business?",
     description:
