@@ -91,11 +91,19 @@ export type QRUpdateBody = {
 };
 
 export type ScanByDay = { date: string; scans: number };
+export type ScansByDevice = { device: string; scans: number };
+export type ScansByCountry = { country: string; scans: number };
+export type ScansByReferrer = { referrer: string; scans: number };
+export type ScansByUtmSource = { source: string; scans: number };
 
 export type QRAnalyticsResponse = {
   qr: { id: string; name: string; contentType: string; createdAt: string; scanCount: number };
   lastScannedAt: string | null;
   scansByDay: ScanByDay[];
+  scansByDevice: ScansByDevice[];
+  scansByCountry: ScansByCountry[];
+  scansByReferrer: ScansByReferrer[];
+  scansByUtmSource: ScansByUtmSource[];
 };
 
 // ---------------------------------------------------------------------------

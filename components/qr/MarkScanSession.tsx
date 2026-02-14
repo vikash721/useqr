@@ -1,24 +1,40 @@
 "use client";
 
-import { useEffect } from "react";
-import { markScannedInSession } from "@/lib/db/analytics";
+import { useEffect, useRef } from "react";
+import { recordScan } from "@/lib/db/analytics";
 
 type MarkScanSessionProps = {
   qrId: string;
+  utm?: {
+    utmSource?: string;
+    utmMedium?: string;
+    utmCampaign?: string;
+    utmContent?: string;
+  };
 };
 
 /**
- * Client component that marks a QR scan in the session after page load.
- * This sets a cookie to prevent duplicate scan counts on page refresh.
+ * Client component that records a scan and prevents duplicates on page refresh.
+ * Uses sessionStorage (tab-isolated) to track if this QR was already scanned in this tab.
+ * Each new tab = fresh sessionStorage = new scan recorded.
  */
-export function MarkScanSession({ qrId }: MarkScanSessionProps) {
+export function MarkScanSession({ qrId, utm }: MarkScanSessionProps) {
+  // Store utm in a ref so it's not a dependency of useEffect.
+  // The utm value is only needed on the first call and never changes for a given page load.
+  const utmRef = useRef(utm);
+
   useEffect(() => {
-    // Call server action to set the cookie
-    markScannedInSession(qrId).catch((err) => {
-      console.error("[MarkScanSession] Failed to mark scan:", err);
-    });
+    const sessionKey = `qr_scanned_${qrId}`;
+    if (sessionStorage.getItem(sessionKey)) return;
+
+    recordScan(qrId, utmRef.current)
+      .then(() => {
+        sessionStorage.setItem(sessionKey, "1");
+      })
+      .catch((err) => {
+        console.error("[MarkScanSession] Failed to record scan:", err);
+      });
   }, [qrId]);
 
-  // This component renders nothing
   return null;
 }

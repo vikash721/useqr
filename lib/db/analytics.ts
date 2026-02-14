@@ -1,7 +1,7 @@
 "use server";
 
 import type { ClientSession } from "mongodb";
-import { cookies, headers } from "next/headers";
+import { headers } from "next/headers";
 import { getDb } from "@/lib/db/mongodb";
 import { SCAN_EVENTS_COLLECTION, type ScanEventDocument } from "@/lib/db/schemas/analytics";
 import { incrementQRScanCount } from "@/lib/db/qrs";
@@ -85,8 +85,12 @@ async function resolveGeo(hdrs: Headers): Promise<GeoResult> {
 
 // ── Indexes ─────────────────────────────────────────────────────────────────
 
+/** Module-level flag — indexes only need to be ensured once per process lifetime. */
+let _indexesEnsured = false;
+
 /**
- * Ensures indexes on the scan_events collection. Idempotent; safe to call on every deploy or first write.
+ * Ensures indexes on the scan_events collection. Idempotent and cached — after
+ * the first successful call the flag is set and subsequent calls are a no-op.
  *
  * Index strategy:
  * - Primary: { qrId, scannedAt } — covers date-range queries, "last scan", deletes, and is the
@@ -94,7 +98,8 @@ async function resolveGeo(hdrs: Headers): Promise<GeoResult> {
  * - Per-field compounds: { qrId, scannedAt, <field> } — lets MongoDB satisfy the $match on
  *   qrId + scannedAt range AND the $group key in a single index scan for each breakdown query.
  */
-export async function ensureScanEventIndexes(): Promise<void> {
+async function ensureScanEventIndexes(): Promise<void> {
+  if (_indexesEnsured) return;
   const db = await getDb();
   const coll = db.collection(SCAN_EVENTS_COLLECTION);
   await Promise.all([
@@ -104,6 +109,7 @@ export async function ensureScanEventIndexes(): Promise<void> {
     coll.createIndex({ qrId: 1, scannedAt: -1, referrer: 1 }),       // referrer breakdown
     coll.createIndex({ qrId: 1, scannedAt: -1, utmSource: 1 }),      // UTM source breakdown
   ]);
+  _indexesEnsured = true;
 }
 
 // ── Record scan ─────────────────────────────────────────────────────────────
@@ -124,6 +130,7 @@ export type UtmParams = {
  * to pass the qrId and optional UTM params (only available via searchParams).
  */
 export async function recordScan(qrId: string, utm?: UtmParams): Promise<void> {
+  // Ensure indexes (no-op after first call in this process)
   await ensureScanEventIndexes();
 
   // ── Collect analytics from request headers ──────────────────────────
@@ -159,37 +166,11 @@ export async function recordScan(qrId: string, utm?: UtmParams): Promise<void> {
     ...(utm?.utmContent && { utmContent: utm.utmContent }),
   };
 
-  await coll.insertOne(doc);
-  await incrementQRScanCount(qrId);
-}
-
-/**
- * Checks if a QR code has already been scanned in the current session.
- * @param qrId - The ID of the QR code
- * @returns true if already scanned in this session, false otherwise
- */
-export async function hasScannedInSession(qrId: string): Promise<boolean> {
-  const cookieStore = await cookies();
-  const sessionCookieName = `qr_scan_${qrId}`;
-  const existingScan = cookieStore.get(sessionCookieName);
-  return !!existingScan;
-}
-
-/**
- * Server Action: Sets a cookie to mark that a QR has been scanned in this session.
- * Must be called from a Server Action or client component, not directly from a Server Component.
- * @param qrId - The ID of the QR code
- */
-export async function markScannedInSession(qrId: string): Promise<void> {
-  const cookieStore = await cookies();
-  const sessionCookieName = `qr_scan_${qrId}`;
-  
-  cookieStore.set(sessionCookieName, "1", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24, // 24 hours as fallback
-  });
+  // Insert event + increment counter in parallel — independent operations
+  await Promise.all([
+    coll.insertOne(doc),
+    incrementQRScanCount(qrId),
+  ]);
 }
 
 export type ScanByDay = { date: string; scans: number };
@@ -222,8 +203,15 @@ export async function deleteScanEventsByQrId(
 }
 
 /**
- * Returns aggregated scan analytics for a QR:
- * last scan time, scans by day, device breakdown, country breakdown, top referrers, and UTM sources.
+ * Returns aggregated scan analytics for a QR in a single MongoDB round-trip using $facet.
+ *
+ * One `$match` filters to the QR's date range, then `$facet` fans out into
+ * 5 sub-pipelines (byDay, byDevice, byCountry, byReferrer, byUtmSource)
+ * that all execute within the same aggregation cursor — eliminating the
+ * previous 6-query overhead.
+ *
+ * `lastScannedAt` is extracted from the byDay result (last date bucket) to
+ * avoid an extra `findOne` round-trip.
  */
 export async function getScanAnalytics(
   qrId: string,
@@ -236,98 +224,93 @@ export async function getScanAnalytics(
   startOfCreated.setUTCHours(0, 0, 0, 0);
   const now = new Date();
 
-  const dateMatch = {
-    qrId,
-    scannedAt: { $gte: startOfCreated, $lte: now },
+  type FacetResult = {
+    lastScan: Array<{ scannedAt: Date }>;
+    byDay: ScanByDay[];
+    byDevice: ScansByDevice[];
+    byCountry: ScansByCountry[];
+    byReferrer: ScansByReferrer[];
+    byUtmSource: ScansByUtmSource[];
   };
 
-  const [lastEvent, byDay, byDevice, byCountry, byReferrer, byUtmSource] =
-    await Promise.all([
-      // Last scan
-      coll.findOne(
-        { qrId },
-        { projection: { scannedAt: 1 }, sort: { scannedAt: -1 } }
-      ) as Promise<{ scannedAt?: Date } | null>,
+  const [result] = await coll
+    .aggregate<FacetResult>([
+      {
+        $match: {
+          qrId,
+          scannedAt: { $gte: startOfCreated, $lte: now },
+        },
+      },
+      {
+        $facet: {
+          // ── Last scan timestamp ───────────────────────────────────
+          lastScan: [
+            { $sort: { scannedAt: -1 as const } },
+            { $limit: 1 },
+            { $project: { scannedAt: 1, _id: 0 } },
+          ],
 
-      // Scans by day
-      coll
-        .aggregate<ScanByDay>([
-          { $match: dateMatch },
-          {
-            $group: {
-              _id: {
-                $dateToString: { format: "%Y-%m-%d", date: "$scannedAt" },
+          // ── Scans by day ──────────────────────────────────────────
+          byDay: [
+            {
+              $group: {
+                _id: { $dateToString: { format: "%Y-%m-%d", date: "$scannedAt" } },
+                scans: { $sum: 1 },
               },
-              scans: { $sum: 1 },
             },
-          },
-          { $sort: { _id: 1 } },
-          { $project: { date: "$_id", scans: 1, _id: 0 } },
-        ])
-        .toArray(),
+            { $sort: { _id: 1 as const } },
+            { $project: { date: "$_id", scans: 1, _id: 0 } },
+          ],
 
-      // Scans by device type
-      coll
-        .aggregate<ScansByDevice>([
-          { $match: { ...dateMatch, deviceType: { $exists: true } } },
-          { $group: { _id: "$deviceType", scans: { $sum: 1 } } },
-          { $sort: { scans: -1 } },
-          { $project: { device: "$_id", scans: 1, _id: 0 } },
-        ])
-        .toArray(),
+          // ── Scans by device type ──────────────────────────────────
+          byDevice: [
+            { $match: { deviceType: { $exists: true } } },
+            { $group: { _id: "$deviceType", scans: { $sum: 1 } } },
+            { $sort: { scans: -1 as const } },
+            { $project: { device: "$_id", scans: 1, _id: 0 } },
+          ],
 
-      // Scans by country (top 20)
-      coll
-        .aggregate<ScansByCountry>([
-          { $match: { ...dateMatch, countryCode: { $exists: true } } },
-          { $group: { _id: "$countryCode", scans: { $sum: 1 } } },
-          { $sort: { scans: -1 } },
-          { $limit: 20 },
-          { $project: { country: "$_id", scans: 1, _id: 0 } },
-        ])
-        .toArray(),
+          // ── Scans by country (top 20) ─────────────────────────────
+          byCountry: [
+            { $match: { countryCode: { $exists: true } } },
+            { $group: { _id: "$countryCode", scans: { $sum: 1 } } },
+            { $sort: { scans: -1 as const } },
+            { $limit: 20 },
+            { $project: { country: "$_id", scans: 1, _id: 0 } },
+          ],
 
-      // Top referrers (top 10)
-      coll
-        .aggregate<ScansByReferrer>([
-          {
-            $match: {
-              ...dateMatch,
-              referrer: { $exists: true, $ne: "" },
-            },
-          },
-          { $group: { _id: "$referrer", scans: { $sum: 1 } } },
-          { $sort: { scans: -1 } },
-          { $limit: 10 },
-          { $project: { referrer: "$_id", scans: 1, _id: 0 } },
-        ])
-        .toArray(),
+          // ── Top referrers (top 10) ────────────────────────────────
+          byReferrer: [
+            { $match: { referrer: { $exists: true, $ne: "" } } },
+            { $group: { _id: "$referrer", scans: { $sum: 1 } } },
+            { $sort: { scans: -1 as const } },
+            { $limit: 10 },
+            { $project: { referrer: "$_id", scans: 1, _id: 0 } },
+          ],
 
-      // UTM sources (top 10)
-      coll
-        .aggregate<ScansByUtmSource>([
-          {
-            $match: {
-              ...dateMatch,
-              utmSource: { $exists: true, $ne: "" },
-            },
-          },
-          { $group: { _id: "$utmSource", scans: { $sum: 1 } } },
-          { $sort: { scans: -1 } },
-          { $limit: 10 },
-          { $project: { source: "$_id", scans: 1, _id: 0 } },
-        ])
-        .toArray(),
-    ]);
+          // ── UTM sources (top 10) ──────────────────────────────────
+          byUtmSource: [
+            { $match: { utmSource: { $exists: true, $ne: "" } } },
+            { $group: { _id: "$utmSource", scans: { $sum: 1 } } },
+            { $sort: { scans: -1 as const } },
+            { $limit: 10 },
+            { $project: { source: "$_id", scans: 1, _id: 0 } },
+          ],
+        },
+      },
+    ])
+    .toArray();
+
+  const lastScan = result?.lastScan?.[0];
 
   return {
-    lastScannedAt: lastEvent?.scannedAt
-      ? lastEvent.scannedAt.toISOString()
+    lastScannedAt: lastScan?.scannedAt
+      ? lastScan.scannedAt.toISOString()
       : null,
-    scansByDay: byDay,
-    scansByDevice: byDevice,
-    scansByCountry: byCountry,
-    scansByReferrer: byReferrer,
-    scansByUtmSource: byUtmSource,
+    scansByDay: result?.byDay ?? [],
+    scansByDevice: result?.byDevice ?? [],
+    scansByCountry: result?.byCountry ?? [],
+    scansByReferrer: result?.byReferrer ?? [],
+    scansByUtmSource: result?.byUtmSource ?? [],
   };
 }

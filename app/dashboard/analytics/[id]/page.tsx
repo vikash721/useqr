@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BarChart as RechartsBarChart,
   Bar,
@@ -19,9 +19,17 @@ import {
   CalendarRange,
   Check,
   ChevronDown,
+  Globe,
+  Link2,
+  Megaphone,
+  Monitor,
   QrCode,
   ScanLine,
 } from "lucide-react";
+import { DeviceChart } from "@/components/dashboard/analytics/DeviceChart";
+import { CountryChart } from "@/components/dashboard/analytics/CountryChart";
+import { ReferrerList } from "@/components/dashboard/analytics/ReferrerList";
+import { UtmSourceChart } from "@/components/dashboard/analytics/UtmSourceChart";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -156,13 +164,17 @@ export default function AnalyticsDetailPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [activePreset, setActivePreset] = useState<Preset>("last7");
+  const initializedRef = useRef(false);
 
   useEffect(() => {
-    if (data && defaultRange.from && defaultRange.to && !dateFrom && !dateTo) {
+    // Initialize date range once when data and defaultRange are both ready.
+    // Use a ref to ensure this only runs once, avoiding complex dependency issues.
+    if (!initializedRef.current && data && defaultRange.from && defaultRange.to) {
       setDateFrom(defaultRange.from);
       setDateTo(defaultRange.to);
+      initializedRef.current = true;
     }
-  }, [data, defaultRange.from, defaultRange.to, dateFrom, dateTo]);
+  }, [data, defaultRange]);
 
   const handlePresetChange = useCallback(
     (preset: Preset) => {
@@ -248,6 +260,14 @@ export default function AnalyticsDetailPage() {
               ))}
             </div>
             <Skeleton className="h-[400px] rounded-xl" />
+            <div className="mt-6 grid gap-6 sm:grid-cols-2">
+              <Skeleton className="h-[280px] rounded-xl" />
+              <Skeleton className="h-[280px] rounded-xl" />
+            </div>
+            <div className="mt-6 grid gap-6 sm:grid-cols-2">
+              <Skeleton className="h-[280px] rounded-xl" />
+              <Skeleton className="h-[280px] rounded-xl" />
+            </div>
           </div>
         </div>
       </>
@@ -278,9 +298,18 @@ export default function AnalyticsDetailPage() {
     );
   }
 
-  const { qr, lastScannedAt, scansByDay } = data;
+  const {
+    qr,
+    lastScannedAt,
+    scansByDay,
+    scansByDevice = [],
+    scansByCountry = [],
+    scansByReferrer = [],
+    scansByUtmSource = [],
+  } = data;
   const totalScans = qr.scanCount ?? 0;
   const last7Scans = scansByDay.slice(-7).reduce((s, d) => s + d.scans, 0);
+  const uniqueCountries = scansByCountry.length;
 
   return (
     <>
@@ -315,6 +344,7 @@ export default function AnalyticsDetailPage() {
           <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
             <StatCard label="Total scans" value={totalScans} icon={ScanLine} />
             <StatCard label="Last 7 days" value={last7Scans} icon={BarChart3} />
+            <StatCard label="Countries" value={uniqueCountries} icon={Globe} />
             <StatCard
               label="Last scanned"
               value={
@@ -394,6 +424,84 @@ export default function AnalyticsDetailPage() {
               ) : (
                 <ScansByDayChart scansByDay={filteredScansByDay} />
               )}
+            </div>
+          </div>
+
+          {/* ── Device & Country breakdown ────────────────────────────── */}
+          <div className="mt-6 grid gap-6 sm:grid-cols-2">
+            {/* Device type */}
+            <div className="rounded-xl border border-border bg-card shadow-sm ring-1 ring-border/50">
+              <div className="border-b border-border px-6 py-4 sm:px-8">
+                <div className="flex items-center gap-2">
+                  <Monitor className="size-4 text-muted-foreground" />
+                  <h2 className="text-sm font-semibold text-foreground">
+                    Scans by device
+                  </h2>
+                </div>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Mobile, desktop &amp; tablet breakdown
+                </p>
+              </div>
+              <div className="min-h-[220px] p-6 sm:p-8">
+                <DeviceChart data={scansByDevice} />
+              </div>
+            </div>
+
+            {/* Country */}
+            <div className="rounded-xl border border-border bg-card shadow-sm ring-1 ring-border/50">
+              <div className="border-b border-border px-6 py-4 sm:px-8">
+                <div className="flex items-center gap-2">
+                  <Globe className="size-4 text-muted-foreground" />
+                  <h2 className="text-sm font-semibold text-foreground">
+                    Scans by country
+                  </h2>
+                </div>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Top 20 countries by scan volume
+                </p>
+              </div>
+              <div className="min-h-[220px] p-6 sm:p-8">
+                <CountryChart data={scansByCountry} />
+              </div>
+            </div>
+          </div>
+
+          {/* ── Referrer & UTM breakdown ──────────────────────────────── */}
+          <div className="mt-6 grid gap-6 sm:grid-cols-2">
+            {/* Referrers */}
+            <div className="rounded-xl border border-border bg-card shadow-sm ring-1 ring-border/50">
+              <div className="border-b border-border px-6 py-4 sm:px-8">
+                <div className="flex items-center gap-2">
+                  <Link2 className="size-4 text-muted-foreground" />
+                  <h2 className="text-sm font-semibold text-foreground">
+                    Top referrers
+                  </h2>
+                </div>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Where your scans are coming from
+                </p>
+              </div>
+              <div className="min-h-[220px] p-6 sm:p-8">
+                <ReferrerList data={scansByReferrer} />
+              </div>
+            </div>
+
+            {/* UTM Sources */}
+            <div className="rounded-xl border border-border bg-card shadow-sm ring-1 ring-border/50">
+              <div className="border-b border-border px-6 py-4 sm:px-8">
+                <div className="flex items-center gap-2">
+                  <Megaphone className="size-4 text-muted-foreground" />
+                  <h2 className="text-sm font-semibold text-foreground">
+                    UTM sources
+                  </h2>
+                </div>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Campaign source tracking
+                </p>
+              </div>
+              <div className="min-h-[220px] p-6 sm:p-8">
+                <UtmSourceChart data={scansByUtmSource} />
+              </div>
             </div>
           </div>
         </div>

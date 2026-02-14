@@ -26,5 +26,9 @@ export type {
   QRCreateBody,
   QRUpdateBody,
   ScanByDay,
+  ScansByDevice,
+  ScansByCountry,
+  ScansByReferrer,
+  ScansByUtmSource,
   QRAnalyticsResponse,
 } from "./qrs";

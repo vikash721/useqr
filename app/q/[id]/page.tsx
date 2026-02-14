@@ -1,6 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { headers } from "next/headers";
-import { recordScan, hasScannedInSession } from "@/lib/db/analytics";
+import { recordScan } from "@/lib/db/analytics";
 import { getQRById } from "@/lib/db/qrs";
 import { resolveQRScan } from "@/lib/qr/qr-types";
 import { QRDisabledFallback } from "@/components/qr/QRDisabledFallback";
@@ -39,27 +39,18 @@ export default async function ScanPage({ params, searchParams }: Props) {
     return <QRDisabledFallback />;
   }
 
-  // Check if this QR was already scanned in this session
-  let shouldMarkSession = false;
+  // Prepare UTM params for client-side scan recording
+  let utm: { utmSource?: string; utmMedium?: string; utmCampaign?: string; utmContent?: string } | undefined;
   if (qr.analyticsEnabled) {
-    try {
-      const alreadyScanned = await hasScannedInSession(id);
-      if (!alreadyScanned) {
-        // Extract UTM params from query string (only available via searchParams)
-        const utm = {
-          utmSource: typeof search.utm_source === "string" ? search.utm_source : undefined,
-          utmMedium: typeof search.utm_medium === "string" ? search.utm_medium : undefined,
-          utmCampaign: typeof search.utm_campaign === "string" ? search.utm_campaign : undefined,
-          utmContent: typeof search.utm_content === "string" ? search.utm_content : undefined,
-        };
-        // Record the scan — headers (UA, geo, referrer) are read internally by recordScan
-        await recordScan(id, utm);
-        shouldMarkSession = true;
-      }
-    } catch (err) {
-      console.error("[Scan page] Failed to record scan:", err);
-    }
+    utm = {
+      utmSource: typeof search.utm_source === "string" ? search.utm_source : undefined,
+      utmMedium: typeof search.utm_medium === "string" ? search.utm_medium : undefined,
+      utmCampaign: typeof search.utm_campaign === "string" ? search.utm_campaign : undefined,
+      utmContent: typeof search.utm_content === "string" ? search.utm_content : undefined,
+    };
   }
+
+  const shouldMarkSession = qr.analyticsEnabled;
 
   if (qr.contentType === "smart_redirect") {
     const redirects = qr.metadata?.smartRedirect as SmartRedirectUrls | undefined;
@@ -67,7 +58,11 @@ export default async function ScanPage({ params, searchParams }: Props) {
       const headersList = await headers();
       const userAgent = headersList.get("user-agent") ?? "";
       const url = getSmartRedirectUrl(redirects, userAgent);
-      if (url) redirect(url);
+      if (url) {
+        // Record scan server-side before redirect — MarkScanSession won't mount
+        if (qr.analyticsEnabled) await recordScan(id, utm);
+        redirect(url);
+      }
     }
   }
 
@@ -78,6 +73,8 @@ export default async function ScanPage({ params, searchParams }: Props) {
   );
 
   if (resolution.behavior === "redirect") {
+    // Record scan server-side before redirect — MarkScanSession won't mount
+    if (qr.analyticsEnabled) await recordScan(id, utm);
     redirect(resolution.url);
   }
 
@@ -85,7 +82,7 @@ export default async function ScanPage({ params, searchParams }: Props) {
 
   return (
     <>
-      {shouldMarkSession && <MarkScanSession qrId={id} />}
+      {shouldMarkSession && <MarkScanSession qrId={id} utm={utm} />}
       <QRScanLanding
         resolution={resolution}
         contentType={qr.contentType}

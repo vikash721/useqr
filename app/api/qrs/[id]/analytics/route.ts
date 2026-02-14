@@ -28,16 +28,25 @@ export async function GET(_request: Request, context: RouteContext) {
 
     const analytics = await getScanAnalytics(id, doc.createdAt);
 
-    return NextResponse.json({
-      qr: {
-        id: doc._id,
-        name: doc.name,
-        contentType: doc.contentType,
-        createdAt: doc.createdAt.toISOString(),
-        scanCount: doc.scanCount,
+    return NextResponse.json(
+      {
+        qr: {
+          id: doc._id,
+          name: doc.name,
+          contentType: doc.contentType,
+          createdAt: doc.createdAt.toISOString(),
+          scanCount: doc.scanCount,
+        },
+        ...analytics,
       },
-      ...analytics,
-    });
+      {
+        headers: {
+          // Allow CDN / browser to serve stale data while revalidating.
+          // Private — response is user-specific (auth required).
+          "Cache-Control": "private, max-age=15, stale-while-revalidate=45",
+        },
+      }
+    );
   } catch (err) {
     console.error("[GET /api/qrs/[id]/analytics]", err);
     return NextResponse.json(
