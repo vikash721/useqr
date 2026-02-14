@@ -242,8 +242,9 @@ export function PricingContent({ showCta = true }: { showCta?: boolean }) {
       return;
     }
     
-    // Check if running on production domain (useqr.codes)
-    const isProduction = typeof window !== "undefined" && window.location.hostname === "useqr.codes";
+    // Check if running on production domain (useqr.codes or www.useqr.codes)
+    const isProduction = typeof window !== "undefined" && 
+      (window.location.hostname === "useqr.codes" || window.location.hostname === "www.useqr.codes");
     
     if (isProduction) {
       // Show coming soon modal on production since Paddle is not verified yet
