@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://useqr.codes";
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.useqr.codes";
 
 export const metadata: Metadata = {
   title: "QR Code Generator Pricing – Free, Pro & Business Plans",

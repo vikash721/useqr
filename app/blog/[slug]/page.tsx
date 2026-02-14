@@ -4,7 +4,7 @@ import { getPostBySlug, getAllSlugs } from "@/lib/blog/posts";
 import { getPostContent } from "@/lib/blog/content";
 import { BlogPostView } from "@/components/blog/BlogPostView";
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://useqr.codes";
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.useqr.codes";
 
 type Props = {
   params: Promise<{ slug: string }>;

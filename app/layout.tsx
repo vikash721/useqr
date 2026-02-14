@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://useqr.codes";
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.useqr.codes";
 
 const defaultTitle =
   "QR Code Generator | Create Custom, Dynamic QR Codes | UseQR";

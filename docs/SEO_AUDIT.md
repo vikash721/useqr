@@ -121,9 +121,9 @@ All pages include keyword arrays and optimized Open Graph tags.
 ### 2.3. URL Structure ✅ ALREADY OPTIMIZED
 
 URLs are clean and keyword-focused:
-- `useqr.com/pricing`
-- `useqr.com/blog/10-creative-ways-to-use-qr-codes-in-marketing`
-- `useqr.com/designs`
+- `www.useqr.codes/pricing`
+- `www.useqr.codes/blog/10-creative-ways-to-use-qr-codes-in-marketing`
+- `www.useqr.codes/designs`
 
 ### 2.4. Image SEO ✅ COMPLETED
 
