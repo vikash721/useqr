@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
-import { Trash2, Users, ArrowLeft } from "lucide-react";
+import { CheckCircle2, Trash2, Users, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,7 +14,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PaymentWhitelistManager } from "@/components/PaymentWhitelistManager";
 import { api } from "@/lib/axios";
+import { toast } from "@/lib/toast";
 
 type ManageUser = {
   clerkId: string;
@@ -46,6 +48,7 @@ export default function ManageUsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [forbidden, setForbidden] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [whitelistingEmail, setWhitelistingEmail] = useState<string | null>(null);
   const [confirmUser, setConfirmUser] = useState<ManageUser | null>(null);
 
   const fetchUsers = async () => {
@@ -103,6 +106,27 @@ export default function ManageUsersPage() {
     }
   };
 
+  const handleWhitelistUser = async (user: ManageUser) => {
+    if (!user.email) {
+      toast.error("User does not have an email address.");
+      return;
+    }
+    setWhitelistingEmail(user.email);
+    try {
+      await fetch("/api/payment-whitelist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email }),
+      });
+      toast.success("User added to payment whitelist.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to whitelist user.");
+    } finally {
+      setWhitelistingEmail(null);
+    }
+  };
+
   if (!isLoaded || (!isSignedIn && !forbidden)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -149,85 +173,110 @@ export default function ManageUsersPage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
-        {loading ? (
-          <div className="space-y-3">
-            <Skeleton className="h-10 w-full rounded-md" />
-            <Skeleton className="h-10 w-full rounded-md" />
-            <Skeleton className="h-10 w-full rounded-md" />
-          </div>
-        ) : error ? (
-          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
-            {error}
-          </div>
-        ) : users.length === 0 ? (
-          <p className="text-muted-foreground">No users in the database.</p>
-        ) : (
-          <div className="rounded-lg border border-border overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/50">
-                    <th className="text-left p-3 font-medium text-foreground w-14">Photo</th>
-                    <th className="text-left p-3 font-medium text-foreground">Email</th>
-                    <th className="text-left p-3 font-medium text-foreground">Name</th>
-                    <th className="text-left p-3 font-medium text-foreground">Plan</th>
-                    <th className="text-left p-3 font-medium text-foreground">Created</th>
-                    <th className="text-left p-3 font-medium text-foreground">Clerk ID</th>
-                    <th className="text-right p-3 font-medium text-foreground">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((u) => (
-                    <tr key={u.clerkId} className="border-b border-border/60 hover:bg-muted/30">
-                      <td className="p-3">
-                        {u.imageUrl ? (
-                          <img
-                            src={u.imageUrl}
-                            alt={u.name ?? u.email ?? "Avatar"}
-                            className="h-9 w-9 rounded-full object-cover border border-border"
-                          />
-                        ) : (
-                          <div
-                            className="h-9 w-9 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground text-xs font-medium"
-                            title="No photo"
-                          >
-                            {(u.name ?? u.email ?? "?").charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                      </td>
-                      <td className="p-3 text-foreground">{u.email ?? "—"}</td>
-                      <td className="p-3 text-foreground">{u.name ?? "—"}</td>
-                      <td className="p-3 text-muted-foreground">{u.plan}</td>
-                      <td className="p-3 text-muted-foreground">{formatDate(u.createdAt)}</td>
-                      <td className="p-3 font-mono text-xs text-muted-foreground max-w-[140px] truncate" title={u.clerkId}>
-                        {u.clerkId}
-                      </td>
-                      <td className="p-3 text-right">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteClick(u)}
-                          disabled={deletingId === u.clerkId}
-                          aria-label={`Delete user ${u.email ?? u.clerkId}`}
-                        >
-                          {deletingId === u.clerkId ? (
-                            "Deleting…"
-                          ) : (
-                            <>
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              Delete
-                            </>
-                          )}
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      <main className="container mx-auto px-4 py-6 space-y-8">
+        {/* Payment Whitelist Section */}
+        <PaymentWhitelistManager />
+
+        {/* Users Management Section */}
+        <div>
+          <h2 className="text-lg font-semibold text-foreground mb-4">All Users</h2>
+          {loading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-10 w-full rounded-md" />
             </div>
-          </div>
-        )}
+          ) : error ? (
+            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+              {error}
+            </div>
+          ) : users.length === 0 ? (
+            <p className="text-muted-foreground">No users in the database.</p>
+          ) : (
+            <div className="rounded-lg border border-border overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/50">
+                      <th className="text-left p-3 font-medium text-foreground w-14">Photo</th>
+                      <th className="text-left p-3 font-medium text-foreground">Email</th>
+                      <th className="text-left p-3 font-medium text-foreground">Name</th>
+                      <th className="text-left p-3 font-medium text-foreground">Plan</th>
+                      <th className="text-left p-3 font-medium text-foreground">Created</th>
+                      <th className="text-left p-3 font-medium text-foreground">Clerk ID</th>
+                      <th className="text-right p-3 font-medium text-foreground">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => (
+                      <tr key={u.clerkId} className="border-b border-border/60 hover:bg-muted/30">
+                        <td className="p-3">
+                          {u.imageUrl ? (
+                            <img
+                              src={u.imageUrl}
+                              alt={u.name ?? u.email ?? "Avatar"}
+                              className="h-9 w-9 rounded-full object-cover border border-border"
+                            />
+                          ) : (
+                            <div
+                              className="h-9 w-9 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground text-xs font-medium"
+                              title="No photo"
+                            >
+                              {(u.name ?? u.email ?? "?").charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-3 text-foreground">{u.email ?? "—"}</td>
+                        <td className="p-3 text-foreground">{u.name ?? "—"}</td>
+                        <td className="p-3 text-muted-foreground">{u.plan}</td>
+                        <td className="p-3 text-muted-foreground">{formatDate(u.createdAt)}</td>
+                        <td className="p-3 font-mono text-xs text-muted-foreground max-w-[140px] truncate" title={u.clerkId}>
+                          {u.clerkId}
+                        </td>
+                        <td className="p-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleWhitelistUser(u)}
+                              disabled={!u.email || whitelistingEmail === u.email}
+                              aria-label={`Whitelist user ${u.email ?? u.clerkId}`}
+                            >
+                              {whitelistingEmail === u.email ? (
+                                "Whitelisting…"
+                              ) : (
+                                <>
+                                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                                  Whitelist
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteClick(u)}
+                              disabled={deletingId === u.clerkId}
+                              aria-label={`Delete user ${u.email ?? u.clerkId}`}
+                            >
+                              {deletingId === u.clerkId ? (
+                                "Deleting…"
+                              ) : (
+                                <>
+                                  <Trash2 className="h-4 w-4 mr-1" />
+                                  Delete
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
       </main>
 
       <Dialog open={!!confirmUser} onOpenChange={(open) => !open && handleConfirmClose()}>

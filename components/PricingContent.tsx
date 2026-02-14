@@ -247,14 +247,31 @@ export function PricingContent({ showCta = true }: { showCta?: boolean }) {
       (window.location.hostname === "useqr.codes" || window.location.hostname === "www.useqr.codes");
     
     if (isProduction) {
-      // Show coming soon modal on production since Paddle is not verified yet
-      setPlanModalVariant("coming_soon");
-      setPlanModalPlanName(undefined);
-      setPlanModalOpen(true);
-      return;
+      // Check if user is whitelisted for payments
+      try {
+        const response = await fetch("/api/payment-whitelist/check");
+        const data = await response.json();
+        
+        if (!data.isWhitelisted) {
+          // Show coming soon modal if not whitelisted
+          setPlanModalVariant("coming_soon");
+          setPlanModalPlanName(undefined);
+          setPlanModalOpen(true);
+          return;
+        }
+        
+        // User is whitelisted, proceed with checkout
+      } catch (error) {
+        console.error("Error checking whitelist:", error);
+        // On error, show coming soon modal (fail-safe)
+        setPlanModalVariant("coming_soon");
+        setPlanModalPlanName(undefined);
+        setPlanModalOpen(true);
+        return;
+      }
     }
     
-    // For other domains (localhost, dev, etc.), proceed with normal checkout
+    // For whitelisted users on production or non-production domains, proceed with checkout
     lastOpenedPlanRef.current = planId;
     const opened = await openCheckout(planId, {
       clerkId: user?.id,
