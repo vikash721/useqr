@@ -35,6 +35,7 @@ import { toast } from "@/lib/toast";
 import { useCreateQRStore } from "@/stores/useCreateQRStore";
 import { LANDING_THEMES, getThemeById } from "@/lib/qr/landing-theme";
 import { LandingThemePreview } from "@/components/qr/LandingThemePreview";
+import { usePlanRestrictionModal, PlanRestrictionModal } from "@/components/modals/PlanRestrictionModal";
 import {
   Dialog,
   DialogContent,
@@ -66,16 +67,16 @@ function hasLandingPage(contentType: string | null): boolean {
 
 const QR_TYPES = [
   { id: "url" as const, label: "URL / Link", description: "Website, landing page, or any link", icon: Link2, contentLabel: "URL or link", contentPlaceholder: "https://example.com" },
-  { id: "smart_redirect" as const, label: "Smart redirect", description: "Redirect by device — App Store, Play Store, or fallback", icon: Smartphone, contentLabel: "Redirect URLs", contentPlaceholder: "" },
-  { id: "vcard" as const, label: "vCard", description: "Contact card — name, phone, email. Great for lost & found.", icon: User, contentLabel: "Contact details", contentPlaceholder: "Name, phone, email", tag: "Lost & found" },
-  { id: "wifi" as const, label: "Wi‑Fi", description: "Network name and password", icon: Wifi, contentLabel: "Wi‑Fi details", contentPlaceholder: "Network name, password" },
+  { id: "smart_redirect" as const, label: "Smart redirect", description: "Redirect by device — App Store, Play Store, or fallback", icon: Smartphone, contentLabel: "Redirect URLs", contentPlaceholder: "", premium: true },
+  { id: "vcard" as const, label: "vCard", description: "Contact card — name, phone, email. Great for lost & found.", icon: User, contentLabel: "Contact details", contentPlaceholder: "Name, phone, email", tag: "Lost & found", premium: true },
+  { id: "wifi" as const, label: "Wi‑Fi", description: "Network name and password", icon: Wifi, contentLabel: "Wi‑Fi details", contentPlaceholder: "Network name, password", premium: false },
   { id: "text" as const, label: "Plain text", description: "Short message or note", icon: FileText, contentLabel: "Your message", contentPlaceholder: "Enter your text..." },
-  { id: "email" as const, label: "Email", description: "Pre-filled email (to, subject, body)", icon: Mail, contentLabel: "Email details", contentPlaceholder: "To, subject, body" },
-  { id: "sms" as const, label: "SMS", description: "Pre-filled text message to a number", icon: MessageSquare, contentLabel: "Phone number & message", contentPlaceholder: "+1234567890 or number,message" },
+  { id: "email" as const, label: "Email", description: "Pre-filled email (to, subject, body)", icon: Mail, contentLabel: "Email details", contentPlaceholder: "To, subject, body", premium: false },
+  { id: "sms" as const, label: "SMS", description: "Pre-filled text message to a number", icon: MessageSquare, contentLabel: "Phone number & message", contentPlaceholder: "+1234567890 or number,message", premium: false },
   { id: "phone" as const, label: "Phone", description: "Tap to call a phone number", icon: Phone, contentLabel: "Phone number", contentPlaceholder: "+1234567890" },
-  { id: "location" as const, label: "Location", description: "Map pin — address or coordinates", icon: MapPin, contentLabel: "Address or coordinates", contentPlaceholder: "Address or lat,lng" },
-  { id: "event" as const, label: "Event", description: "Add to calendar — title, date, place", icon: Calendar, contentLabel: "Event details", contentPlaceholder: "Title, start, end" },
-  { id: "whatsapp" as const, label: "WhatsApp", description: "Start a chat with a number", icon: MessageCircle, contentLabel: "Phone number (with country code)", contentPlaceholder: "+1234567890" },
+  { id: "location" as const, label: "Location", description: "Map pin — address or coordinates", icon: MapPin, contentLabel: "Address or coordinates", contentPlaceholder: "Address or lat,lng", premium: true },
+  { id: "event" as const, label: "Event", description: "Add to calendar — title, date, place", icon: Calendar, contentLabel: "Event details", contentPlaceholder: "Title, start, end", premium: true },
+  { id: "whatsapp" as const, label: "WhatsApp", description: "Start a chat with a number", icon: MessageCircle, contentLabel: "Phone number (with country code)", contentPlaceholder: "+1234567890", premium: false },
 ] as const;
 
 function CreateQRPageContent() {
@@ -130,6 +131,7 @@ function CreateQRPageContent() {
   const [editLoading, setEditLoading] = useState(!!editId);
   const [editError, setEditError] = useState<string | null>(null);
   const [previewThemeId, setPreviewThemeId] = useState<LandingThemeDb | null>(null);
+  const { modalState, handleError, closeModal } = usePlanRestrictionModal();
 
   // Disable main page (body) scroll only on this page to avoid weird UI from double scroll.
   useEffect(() => {
@@ -304,11 +306,17 @@ function CreateQRPageContent() {
         router.push(`/dashboard/my-qr/${qr.id}`);
       }
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { error?: string } } })?.response?.data
-          ?.error ?? (editingId ? "Failed to update QR. Try again." : "Failed to create QR. Try again.");
-      setCreateError(msg);
-      toast.error(msg);
+      // Try to handle as plan restriction error first
+      const handled = handleError(err);
+      
+      // If not a plan error, show generic error
+      if (!handled) {
+        const msg =
+          (err as { response?: { data?: { error?: string } } })?.response?.data
+            ?.error ?? (editingId ? "Failed to update QR. Try again." : "Failed to create QR. Try again.");
+        setCreateError(msg);
+        toast.error(msg);
+      }
     } finally {
       setCreateLoading(false);
     }
@@ -424,6 +432,9 @@ function CreateQRPageContent() {
                             <div className="min-w-0 flex-1">
                               <span className="flex items-center gap-2 text-sm font-medium">
                                 {type.label}
+                                {"premium" in type && type.premium && (
+                                  <Crown className="size-3.5 shrink-0 text-amber-500" aria-label="Premium feature" />
+                                )}
                                 {"tag" in type && type.tag && (
                                   <span className="inline-flex shrink-0 items-center rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
                                     {type.tag}
@@ -1130,6 +1141,9 @@ function CreateQRPageContent() {
           </div>
         </div>
       </div>
+      
+      {/* Plan Restriction Modal */}
+      <PlanRestrictionModal state={modalState} onClose={closeModal} />
     </div>
   );
 }

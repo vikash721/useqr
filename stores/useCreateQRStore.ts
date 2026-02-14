@@ -137,7 +137,7 @@ const initialState: CreateQRState = {
   selectedTemplate: "classic",
   qrStyle: {},
   landingTheme: DEFAULT_LANDING_THEME,
-  analyticsEnabled: true,
+  analyticsEnabled: false,
 };
 
 /** Initial state for store; previewQRId is left empty so server and client match (set on client after mount). */

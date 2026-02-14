@@ -253,7 +253,7 @@ export function AppSidebar() {
                       href="/dashboard/pricing"
                       className="flex items-center gap-2 rounded-md bg-linear-to-r from-emerald-500 to-emerald-600 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-95"
                     >
-                      <Sparkles className="size-4 shrink-0" />
+                      <Sparkles className="size-4 shrink-0 text-white/80" />
                       Upgrade
                     </Link>
                   </DropdownMenuItem>

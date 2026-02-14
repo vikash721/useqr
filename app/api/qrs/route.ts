@@ -8,16 +8,37 @@ import {
   countQRsByClerk,
 } from "@/lib/db/qrs";
 import { qrCreateBodySchema } from "@/lib/db/schemas/qr";
+import { getUserByClerkId } from "@/lib/db/users";
+import {
+  checkAccess,
+  FeatureNotAvailableError,
+  LimitExceededError,
+  getAccessInfo,
+} from "@/lib/plans/access-control";
+import {
+  createFeatureNotAvailableResponse,
+  createLimitExceededResponse,
+} from "@/lib/plans/middleware";
 
 /**
  * POST /api/qrs
  * Create a new QR. Auth required. Body: name, contentType, content, template, analyticsEnabled, status.
  * Server sets _id, clerkId, payload, createdAt, updatedAt, scanCount.
+ *
+ * Plan-based access control:
+ * - Checks if user's plan allows creating QRs
+ * - Enforces QR code count limits per plan
  */
 export async function POST(request: Request) {
   const user = await currentUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Get user's plan from database
+  const userDoc = await getUserByClerkId(user.id);
+  if (!userDoc) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
   let body: unknown;
@@ -38,8 +59,58 @@ export async function POST(request: Request) {
     );
   }
 
+  // Check plan-based feature restrictions
   const { name, contentType, content, message, metadata: bodyMetadata, template, style, landingTheme, analyticsEnabled, status } =
     parsed.data;
+
+  // Validate features based on plan
+  const featureValidations = [];
+
+  // Check images/video feature
+  if (contentType === "image" || contentType === "video") {
+    featureValidations.push({ feature: "imagesAndVideo" as const, required: true });
+  }
+
+  // Check smart redirect
+  if (bodyMetadata?.smartRedirect) {
+    featureValidations.push({ feature: "smartRedirectDevice" as const, required: true });
+  }
+
+  // Check scan analytics
+  if (analyticsEnabled) {
+    featureValidations.push({ feature: "scanAnalytics" as const, required: true });
+  }
+
+  // Execute feature validations
+  for (const { feature } of featureValidations) {
+    try {
+      checkAccess({ plan: userDoc.plan }, feature);
+    } catch (err) {
+      if (err instanceof FeatureNotAvailableError) {
+        return createFeatureNotAvailableResponse(userDoc.plan, err.featureKey);
+      }
+      throw err;
+    }
+  }
+
+  // Check QR code limit
+  try {
+    const qrCount = await countQRsByClerk(user.id);
+    checkAccess({ plan: userDoc.plan }, "qrCodesIncluded", qrCount);
+  } catch (err) {
+    if (err instanceof FeatureNotAvailableError) {
+      return createFeatureNotAvailableResponse(userDoc.plan, err.featureKey);
+    }
+    if (err instanceof LimitExceededError) {
+      const accessInfo = getAccessInfo(userDoc.plan, "qrCodesIncluded");
+      return createLimitExceededResponse(
+        "qrCodesIncluded",
+        accessInfo.limit!,
+        qrCount
+      );
+    }
+    throw err;
+  }
 
   const baseUrl = getCardBaseUrl();
   const _id = generateQRId();
