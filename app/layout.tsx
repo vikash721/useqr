@@ -23,9 +23,9 @@ const geistMono = Geist_Mono({
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.useqr.codes";
 
 const defaultTitle =
-  "QR Code Generator | Create Custom, Dynamic QR Codes | UseQR";
+  "Dynamic & Custom QR Code Generator with Free Plan & Analytics | UseQR";
 const defaultDescription =
-  "Create custom, dynamic QR codes with logos, colors, and shapes. Track scans, update content anytime, and use them for anything — personal or professional.";
+  "Create free dynamic QR codes with custom logos, colors & multiple types. Track scan analytics and update content anytime with UseQR’s flexible QR tools.";
 const ogImageUrl = `${siteUrl}/landing-page.png`;
 const ogImageAlt =
   "UseQR – The Best QR Code Generator for Your Business. Create custom QR codes. Get started free.";
@@ -34,20 +34,20 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
     default: defaultTitle,
-    template: "%s | UseQR",
+    template: "%s | UseQR – Use QR Codes Smarter",
   },
   description: defaultDescription,
   keywords: [
-    "qr code",
-    "qr code generator",
-    "free qr code generator",
-    "dynamic qr code",
-    "custom qr code",
-    "qr code with logo",
-    "qr code analytics",
-    "trackable qr codes",
-    "qr code for business",
-    "UseQR",
+  "dynamic qr code generator",
+  "free dynamic qr code generator",
+  "custom qr code generator with logo",
+  "qr code generator with analytics",
+  "trackable qr codes",
+  "editable qr codes",
+  "reusable qr codes",
+  "qr code generator for business",
+  "multiple qr code types",
+  "UseQR dynamic qr platform"
   ],
   authors: [{ name: "UseQR", url: siteUrl }],
   creator: "UseQR",
@@ -93,23 +93,18 @@ const jsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   name: "UseQR",
+  alternateName: ["Use QR"],
   description:
-    "Create custom, dynamic QR codes with logos, colors, and shapes. Track scans, update content anytime, and use them for anything — personal or professional.",
+    "Create free dynamic QR codes with custom logos, colors & multiple QR types. Track detailed scan analytics and update your QR anytime — perfect for business or personal use.",
   url: siteUrl,
   applicationCategory: "BusinessApplication",
+  applicationSubCategory: "Marketing Software",
   operatingSystem: "Web",
   offers: {
     "@type": "Offer",
     price: "0",
     priceCurrency: "USD",
     description: "Free plan with core QR code features",
-  },
-  aggregateRating: {
-    "@type": "AggregateRating",
-    ratingValue: "4.8",
-    ratingCount: "150",
-    bestRating: "5",
-    worstRating: "1",
   },
   brand: {
     "@type": "Brand",
@@ -121,7 +116,7 @@ const jsonLd = {
     url: siteUrl,
   },
   featureList:
-    "Custom QR Codes, Dynamic QR Codes, QR Code Analytics, QR Code with Logo, Bulk QR Code Generator, vCard QR Codes",
+    "Dynamic QR Codes, Reusable QR Codes, Custom QR Codes with Logo, Detailed QR Code Analytics, Multiple QR Code Types (URL, vCard, WiFi, PDF), Bulk QR Code Generator",
   screenshot: `${siteUrl}/landing-page.png`,
 };
 
@@ -129,6 +124,7 @@ const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "UseQR",
+  alternateName: ["Use QR"],
   url: siteUrl,
   logo: `${siteUrl}/logo/svg/logo.svg`,
   description:

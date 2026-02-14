@@ -6,6 +6,7 @@ import { useAuth } from "@clerk/nextjs";
 import { Image, Link2, Package, RefreshCw, UserCircle, UtensilsCrossed, ShoppingBag, Building2, Ticket, Stethoscope, BookOpen } from "lucide-react";
 import Link from "next/link";
 import DynamicLandingQR from "@/components/DynamicLandingQR";
+import { FAQItem } from "@/components/FAQSection";
 import PixelBlast from "@/components/PixelBlast";
 import PixelCard from "@/components/PixelCard";
 import LetterGlitch from "@/components/LetterGlitch";
@@ -22,6 +23,59 @@ import { scanApi } from "@/lib/api";
 import { showDevelopmentNotice } from "@/lib/toast";
 import { useScanStore } from "@/stores/useScanStore";
 import { useShouldShowHeader } from "@/utils/sidebar";
+
+const DEFAULT_FAQ_ITEMS: FAQItem[] = [
+  {
+    question: "What can I put in a QR code?",
+    answer:
+      "Almost anything: URLs, web pages, images, videos, PDFs, plain text, or your contact info. UseQR lets you pack links, media, or a full digital identity into one reusable code.",
+  },
+  {
+    question: "Can I change the content later?",
+    answer:
+      "Yes. Your QR code stays the same—only the content behind it updates. Change the link, swap the file, or edit your contact details anytime. No need to reprint or create a new code.",
+  },
+  {
+    question: "Is there a limit on scans?",
+    answer:
+      "No. Once your QR is live, it can be scanned as many times as needed. We don't cap scans, so you can use the same code for events, print, or long-term use.",
+  },
+  {
+    question: 'How do "get found" / contact QRs work?',
+    answer:
+      'Create a QR that points to your contact details or a simple page. Stick it on keys, bags, or gear. Anyone who finds the item can scan and reach you—no lost items, no awkward "who does this belong to?".',
+  },
+  {
+    question: "Do I need an account to create a QR?",
+    answer:
+      "You can create and download a QR without signing up. For reusable codes you can update later, saving designs, and managing multiple QRs, an account is required.",
+  },
+  {
+    question: "Are QR codes safe to scan?",
+    answer:
+      "Yes, QR codes themselves are safe. They're just a way to encode information. However, always check the URL preview before visiting a link. UseQR codes are secure and you control where they point.",
+  },
+  {
+    question: "Do QR codes expire?",
+    answer:
+      "Static QR codes never expire. Dynamic QR codes from UseQR remain active as long as your account is active. Your codes won't suddenly stop working.",
+  },
+  {
+    question: "What's the difference between static and dynamic QR codes?",
+    answer:
+      "Static QR codes have fixed content that can't be changed. Dynamic QR codes let you update the destination URL or content anytime without creating a new code. Dynamic codes also provide scan analytics.",
+  },
+  {
+    question: "Can I track how many people scan my QR code?",
+    answer:
+      "Yes, with dynamic QR codes. You get detailed analytics including total scans, unique users, locations, devices, and scan times. This helps you measure campaign performance.",
+  },
+  {
+    question: "Do QR codes work without internet?",
+    answer:
+      "Scanning a QR code requires a camera, but accessing the content usually needs internet. However, QR codes with plain text, WiFi passwords, or vCards can work offline since the data is embedded in the code.",
+  },
+];
 
 function HeroBackground() {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -81,7 +135,20 @@ function HeroBackground() {
   );
 }
 
-export default function HomeClient() {
+
+interface HomeClientProps {
+  heroTitle?: React.ReactNode;
+  heroSubtitle?: string;
+  faqItems?: FAQItem[];
+  jsonLd?: Record<string, any>;
+}
+
+export default function HomeClient({
+  heroTitle,
+  heroSubtitle,
+  faqItems,
+  jsonLd,
+}: HomeClientProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isLoaded, isSignedIn } = useAuth();
@@ -215,6 +282,8 @@ export default function HomeClient() {
 
   const missionPassedOpen = Boolean(scanStatus?.scanned);
 
+  const effectiveFaqItems = faqItems || DEFAULT_FAQ_ITEMS;
+
   return (
     <>
       <MissionPassedModal
@@ -233,91 +302,17 @@ export default function HomeClient() {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: JSON.stringify(jsonLd || {
               "@context": "https://schema.org",
               "@type": "FAQPage",
-              mainEntity: [
-                {
-                  "@type": "Question",
-                  name: "What can I put in a QR code?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "Almost anything: URLs, web pages, images, videos, PDFs, plain text, or your contact info. UseQR lets you pack links, media, or a full digital identity into one reusable code.",
-                  },
+              mainEntity: effectiveFaqItems.map((item) => ({
+                "@type": "Question",
+                name: item.question,
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: item.answer,
                 },
-                {
-                  "@type": "Question",
-                  name: "Can I change the content later?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "Yes. Your QR code stays the same—only the content behind it updates. Change the link, swap the file, or edit your contact details anytime. No need to reprint or create a new code.",
-                  },
-                },
-                {
-                  "@type": "Question",
-                  name: "Is there a limit on scans?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "No. Once your QR is live, it can be scanned as many times as needed. We don't cap scans, so you can use the same code for events, print, or long-term use.",
-                  },
-                },
-                {
-                  "@type": "Question",
-                  name: "How do get found / contact QRs work?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "Create a QR that points to your contact details or a simple page. Stick it on keys, bags, or gear. Anyone who finds the item can scan and reach you.",
-                  },
-                },
-                {
-                  "@type": "Question",
-                  name: "Do I need an account to create a QR?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "You can create and download a QR without signing up. For reusable codes you can update later, saving designs, and managing multiple QRs, an account is required.",
-                  },
-                },
-                {
-                  "@type": "Question",
-                  name: "Are QR codes safe to scan?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "Yes, QR codes themselves are safe. They're just a way to encode information. However, always check the URL preview before visiting a link. UseQR codes are secure and you control where they point.",
-                  },
-                },
-                {
-                  "@type": "Question",
-                  name: "Do QR codes expire?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "Static QR codes never expire. Dynamic QR codes from UseQR remain active as long as your account is active. Your codes won't suddenly stop working.",
-                  },
-                },
-                {
-                  "@type": "Question",
-                  name: "What's the difference between static and dynamic QR codes?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "Static QR codes have fixed content that can't be changed. Dynamic QR codes let you update the destination URL or content anytime without creating a new code. Dynamic codes also provide scan analytics.",
-                  },
-                },
-                {
-                  "@type": "Question",
-                  name: "Can I track how many people scan my QR code?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "Yes, with dynamic QR codes. You get detailed analytics including total scans, unique users, locations, devices, and scan times. This helps you measure campaign performance.",
-                  },
-                },
-                {
-                  "@type": "Question",
-                  name: "Do QR codes work without internet?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "Scanning a QR code requires a camera, but accessing the content usually needs internet. However, QR codes with plain text, WiFi passwords, or vCards can work offline since the data is embedded in the code.",
-                  },
-                },
-              ],
+              })),
             }),
           }}
         />
@@ -340,11 +335,15 @@ export default function HomeClient() {
               <div className="relative z-10 flex w-full max-w-5xl flex-col items-center gap-12 lg:flex-row lg:items-center lg:justify-between lg:gap-20">
               <div className="flex max-w-xl flex-col items-center gap-8 text-center lg:items-start lg:text-left">
                 <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl">
-                  Dynamic QR Code Generator.{" "}
-                  <span className="text-emerald-400">Simple & Powerful.</span>
+                    {heroTitle || (
+                    <>
+                      Dynamic QR Codes. Update{" "}
+                      <span className="text-emerald-400"> Anytime. Track Every Scan.</span>
+                      </>
+                    )}
                 </h1>
                 <p className="text-lg text-zinc-400 sm:text-xl">
-                  Create custom QR codes for links, contacts, menus, events, or anything else. Track scans and update content anytime.
+                  {heroSubtitle || "Create custom QR codes for links, contacts, menus, events, or anything else. Track scans and update content anytime."}
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
                   <Link
@@ -640,58 +639,7 @@ export default function HomeClient() {
               id="faq"
               title="Frequently asked questions"
               subtitle="Everything you need to know about UseQR."
-              items={[
-                {
-                  question: "What can I put in a QR code?",
-                  answer:
-                    "Almost anything: URLs, web pages, images, videos, PDFs, plain text, or your contact info. UseQR lets you pack links, media, or a full digital identity into one reusable code.",
-                },
-                {
-                  question: "Can I change the content later?",
-                  answer:
-                    "Yes. Your QR code stays the same—only the content behind it updates. Change the link, swap the file, or edit your contact details anytime. No need to reprint or create a new code.",
-                },
-                {
-                  question: "Is there a limit on scans?",
-                  answer:
-                    "No. Once your QR is live, it can be scanned as many times as needed. We don't cap scans, so you can use the same code for events, print, or long-term use.",
-                },
-                {
-                  question: 'How do "get found" / contact QRs work?',
-                  answer:
-                    'Create a QR that points to your contact details or a simple page. Stick it on keys, bags, or gear. Anyone who finds the item can scan and reach you—no lost items, no awkward "who does this belong to?".',
-                },
-                {
-                  question: "Do I need an account to create a QR?",
-                  answer:
-                    "You can create and download a QR without signing up. For reusable codes you can update later, saving designs, and managing multiple QRs, an account is required.",
-                },
-                {
-                  question: "Are QR codes safe to scan?",
-                  answer:
-                    "Yes, QR codes themselves are safe. They're just a way to encode information. However, always check the URL preview before visiting a link. UseQR codes are secure and you control where they point.",
-                },
-                {
-                  question: "Do QR codes expire?",
-                  answer:
-                    "Static QR codes never expire. Dynamic QR codes from UseQR remain active as long as your account is active. Your codes won't suddenly stop working.",
-                },
-                {
-                  question: "What's the difference between static and dynamic QR codes?",
-                  answer:
-                    "Static QR codes have fixed content that can't be changed. Dynamic QR codes let you update the destination URL or content anytime without creating a new code. Dynamic codes also provide scan analytics.",
-                },
-                {
-                  question: "Can I track how many people scan my QR code?",
-                  answer:
-                    "Yes, with dynamic QR codes. You get detailed analytics including total scans, unique users, locations, devices, and scan times. This helps you measure campaign performance.",
-                },
-                {
-                  question: "Do QR codes work without internet?",
-                  answer:
-                    "Scanning a QR code requires a camera, but accessing the content usually needs internet. However, QR codes with plain text, WiFi passwords, or vCards can work offline since the data is embedded in the code.",
-                },
-              ]}
+              items={effectiveFaqItems}
             />
 
             {/* Blog CTA */}
