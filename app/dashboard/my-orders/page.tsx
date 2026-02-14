@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -8,7 +8,9 @@ import {
   MapPin,
   Package,
   Truck,
+  Bell,
 } from "lucide-react";
+import { useLottie } from "lottie-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import {
   getDummyOrders,
@@ -28,8 +30,32 @@ const STATUS_STYLES: Record<OrderStatus, string> = {
   cancelled: "bg-zinc-500/15 text-zinc-500",
 };
 
+function DeliveryAnimation() {
+  const [animationData, setAnimationData] = useState<object | null>(null);
+
+  useEffect(() => {
+    fetch("/lottie/Delivery.json")
+      .then((res) => res.json())
+      .then((data) => setAnimationData(data))
+      .catch((err) => console.error("Failed to load animation:", err));
+  }, []);
+
+  const { View } = useLottie({
+    animationData: animationData || {},
+    loop: true,
+    autoplay: true,
+  });
+
+  if (!animationData) return null;
+
+  return (
+    <div className="relative w-64 h-64 rounded-full overflow-hidden bg-gradient-to-br from-emerald-500/10 to-blue-500/10 border border-border/50 shadow-lg">
+      {View}
+    </div>
+  );
+}
+
 export default function MyOrdersPage() {
-  const orders = getDummyOrders();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   return (
@@ -38,49 +64,42 @@ export default function MyOrdersPage() {
 
       <div className="flex flex-1 flex-col overflow-y-auto">
         <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mb-6 flex flex-col gap-1">
-            <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-              My Orders
+          {/* Coming Soon Section with Lottie */}
+          <div className="mb-8 flex flex-col items-center justify-center rounded-2xl border border-border bg-gradient-to-b from-card to-muted/20 px-6 py-12 text-center shadow-sm">
+            <DeliveryAnimation />
+            
+            <h1 className="mt-6 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+              Orders Coming Soon
             </h1>
-            <p className="text-sm text-muted-foreground">
-              View and track your sticker orders.
+            
+            <p className="mt-3 max-w-md text-base text-muted-foreground">
+              We&apos;re putting the finishing touches on our order management system. 
+              Soon you&apos;ll be able to track your sticker orders right here!
             </p>
-          </div>
 
-          <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-            <Info className="mt-0.5 size-4 shrink-0 text-amber-500" />
-            <p className="text-sm text-amber-200/90">
-              <span className="font-medium text-amber-400">Heads up!</span>{" "}
-              The data shown here is for demonstration purposes only and does not
-              reflect your actual orders. We&apos;re actively working on
-              bringing real-time data to this page.
-            </p>
-          </div>
-
-          {orders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 px-6 py-16 text-center">
-              <Package className="size-12 text-muted-foreground" />
-              <h2 className="mt-4 text-base font-semibold text-foreground">
-                No orders yet
-              </h2>
-              <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-                Your sticker orders will appear here once you place one.
+            <div className="mt-6 flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5">
+              <Bell className="size-4 shrink-0 text-emerald-500" />
+              <p className="text-sm text-emerald-200/90">
+                <span className="font-medium text-emerald-400">We&apos;ll notify you</span>{" "}
+                as soon as this feature goes live
               </p>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {orders.map((order) => (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  isExpanded={expandedId === order.id}
-                  onToggle={() =>
-                    setExpandedId((id) => (id === order.id ? null : order.id))
-                  }
-                />
-              ))}
+
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <div className="size-1.5 rounded-full bg-emerald-500" />
+                <span>Real-time tracking</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="size-1.5 rounded-full bg-emerald-500" />
+                <span>Order history</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="size-1.5 rounded-full bg-emerald-500" />
+                <span>Delivery updates</span>
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </>
