@@ -1,5 +1,5 @@
 /**
- * Welcome email: thanks for signing up + you're on the waitlist.
+ * Welcome email: thanks for signing up and getting started with UseQR.
  * Premium dark theme aligned with UseQR / shadcn UI.
  */
 
@@ -8,7 +8,7 @@ const BASE_URL = "https://useqr.codes";
 const LOGO_URL = `${BASE_URL}/logo/png/logo.png`;
 
 export function getWelcomeEmailSubject(): string {
-  return "Thanks for signing up — you're on the waitlist";
+  return "Welcome to UseQR — Your account is ready";
 }
 
 export function getWelcomeEmailHtml(options: { name?: string | null }): string {
@@ -51,8 +51,8 @@ export function getWelcomeEmailHtml(options: { name?: string | null }): string {
           <tr>
             <td style="background-color:#171717;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:40px 32px;box-shadow:0 4px 24px rgba(0,0,0,0.4);">
               <p style="margin:0 0 24px;font-size:18px;line-height:1.5;color:#fafafa;font-weight:500;">${greeting}</p>
-              <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#e4e4e7;">Thanks for signing up for UseQR. You're on the waitlist — we'll notify you when the full dashboard is live.</p>
-              <p style="margin:0 0 32px;font-size:16px;line-height:1.6;color:#a1a1aa;">We're building the full experience — in the meantime, feel free to explore the app and see what's coming.</p>
+              <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#e4e4e7;">Welcome to UseQR! We're excited to have you on board. Your account is all set up and ready to go.</p>
+              <p style="margin:0 0 32px;font-size:16px;line-height:1.6;color:#a1a1aa;">Create custom QR codes, explore our template library, and upgrade to unlock premium features whenever you're ready.</p>
               <!-- CTA Buttons -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0;">
                 <tr>
