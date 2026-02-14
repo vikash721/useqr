@@ -20,10 +20,12 @@ function getSmartRedirectUrl(redirects: SmartRedirectUrls, userAgent: string): s
 
 type Props = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function ScanPage({ params }: Props) {
+export default async function ScanPage({ params, searchParams }: Props) {
   const { id } = await params;
+  const search = await searchParams;
   if (!id || id.length > 64) {
     notFound();
   }
@@ -43,8 +45,15 @@ export default async function ScanPage({ params }: Props) {
     try {
       const alreadyScanned = await hasScannedInSession(id);
       if (!alreadyScanned) {
-        // Record the scan (but don't set cookie yet - that must be done in a Server Action)
-        await recordScan(id);
+        // Extract UTM params from query string (only available via searchParams)
+        const utm = {
+          utmSource: typeof search.utm_source === "string" ? search.utm_source : undefined,
+          utmMedium: typeof search.utm_medium === "string" ? search.utm_medium : undefined,
+          utmCampaign: typeof search.utm_campaign === "string" ? search.utm_campaign : undefined,
+          utmContent: typeof search.utm_content === "string" ? search.utm_content : undefined,
+        };
+        // Record the scan — headers (UA, geo, referrer) are read internally by recordScan
+        await recordScan(id, utm);
         shouldMarkSession = true;
       }
     } catch (err) {

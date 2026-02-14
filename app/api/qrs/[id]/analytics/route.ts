@@ -26,10 +26,7 @@ export async function GET(_request: Request, context: RouteContext) {
       return NextResponse.json({ error: "QR not found" }, { status: 404 });
     }
 
-    const { lastScannedAt, scansByDay } = await getScanAnalytics(
-      id,
-      doc.createdAt
-    );
+    const analytics = await getScanAnalytics(id, doc.createdAt);
 
     return NextResponse.json({
       qr: {
@@ -39,8 +36,7 @@ export async function GET(_request: Request, context: RouteContext) {
         createdAt: doc.createdAt.toISOString(),
         scanCount: doc.scanCount,
       },
-      lastScannedAt,
-      scansByDay,
+      ...analytics,
     });
   } catch (err) {
     console.error("[GET /api/qrs/[id]/analytics]", err);
