@@ -66,11 +66,6 @@ export async function POST(request: Request) {
   // Validate features based on plan
   const featureValidations = [];
 
-  // Check images/video feature
-  if (contentType === "image" || contentType === "video") {
-    featureValidations.push({ feature: "imagesAndVideo" as const, required: true });
-  }
-
   // Check smart redirect
   if (bodyMetadata?.smartRedirect) {
     featureValidations.push({ feature: "smartRedirectDevice" as const, required: true });
@@ -94,8 +89,9 @@ export async function POST(request: Request) {
   }
 
   // Check QR code limit
+  let qrCount = 0;
   try {
-    const qrCount = await countQRsByClerk(user.id);
+    qrCount = await countQRsByClerk(user.id);
     checkAccess({ plan: userDoc.plan }, "qrCodesIncluded", qrCount);
   } catch (err) {
     if (err instanceof FeatureNotAvailableError) {
