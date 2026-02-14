@@ -241,6 +241,19 @@ export function PricingContent({ showCta = true }: { showCta?: boolean }) {
       router.push(`/login?redirect_url=${encodeURIComponent(`/pricing?plan=${planId}`)}`);
       return;
     }
+    
+    // Check if running on production domain (useqr.codes)
+    const isProduction = typeof window !== "undefined" && window.location.hostname === "useqr.codes";
+    
+    if (isProduction) {
+      // Show coming soon modal on production since Paddle is not verified yet
+      setPlanModalVariant("coming_soon");
+      setPlanModalPlanName(undefined);
+      setPlanModalOpen(true);
+      return;
+    }
+    
+    // For other domains (localhost, dev, etc.), proceed with normal checkout
     lastOpenedPlanRef.current = planId;
     const opened = await openCheckout(planId, {
       clerkId: user?.id,
