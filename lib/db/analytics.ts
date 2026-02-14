@@ -1,4 +1,7 @@
+"use server";
+
 import type { ClientSession } from "mongodb";
+import { cookies } from "next/headers";
 import { getDb } from "@/lib/db/mongodb";
 import { SCAN_EVENTS_COLLECTION, type ScanEventDocument } from "@/lib/db/schemas/analytics";
 import { incrementQRScanCount } from "@/lib/db/qrs";
@@ -23,6 +26,35 @@ export async function recordScan(qrId: string): Promise<void> {
   const now = new Date();
   await coll.insertOne({ qrId, scannedAt: now });
   await incrementQRScanCount(qrId);
+}
+
+/**
+ * Checks if a QR code has already been scanned in the current session.
+ * @param qrId - The ID of the QR code
+ * @returns true if already scanned in this session, false otherwise
+ */
+export async function hasScannedInSession(qrId: string): Promise<boolean> {
+  const cookieStore = await cookies();
+  const sessionCookieName = `qr_scan_${qrId}`;
+  const existingScan = cookieStore.get(sessionCookieName);
+  return !!existingScan;
+}
+
+/**
+ * Server Action: Sets a cookie to mark that a QR has been scanned in this session.
+ * Must be called from a Server Action or client component, not directly from a Server Component.
+ * @param qrId - The ID of the QR code
+ */
+export async function markScannedInSession(qrId: string): Promise<void> {
+  const cookieStore = await cookies();
+  const sessionCookieName = `qr_scan_${qrId}`;
+  
+  cookieStore.set(sessionCookieName, "1", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24, // 24 hours as fallback
+  });
 }
 
 export type ScanByDay = { date: string; scans: number };

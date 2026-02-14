@@ -1,10 +1,11 @@
 import { redirect, notFound } from "next/navigation";
 import { headers } from "next/headers";
-import { recordScan } from "@/lib/db/analytics";
+import { recordScan, hasScannedInSession } from "@/lib/db/analytics";
 import { getQRById } from "@/lib/db/qrs";
 import { resolveQRScan } from "@/lib/qr/qr-types";
 import { QRDisabledFallback } from "@/components/qr/QRDisabledFallback";
 import { QRScanLanding } from "@/components/qr/QRScanLanding";
+import { MarkScanSession } from "@/components/qr/MarkScanSession";
 
 type SmartRedirectUrls = { ios?: string; android?: string; fallback?: string };
 
@@ -36,9 +37,16 @@ export default async function ScanPage({ params }: Props) {
     return <QRDisabledFallback />;
   }
 
+  // Check if this QR was already scanned in this session
+  let shouldMarkSession = false;
   if (qr.analyticsEnabled) {
     try {
-      await recordScan(id);
+      const alreadyScanned = await hasScannedInSession(id);
+      if (!alreadyScanned) {
+        // Record the scan (but don't set cookie yet - that must be done in a Server Action)
+        await recordScan(id);
+        shouldMarkSession = true;
+      }
     } catch (err) {
       console.error("[Scan page] Failed to record scan:", err);
     }
@@ -67,10 +75,13 @@ export default async function ScanPage({ params }: Props) {
   const landingTheme = qr.landingTheme ?? "default";
 
   return (
-    <QRScanLanding
-      resolution={resolution}
-      contentType={qr.contentType}
-      landingTheme={landingTheme}
-    />
+    <>
+      {shouldMarkSession && <MarkScanSession qrId={id} />}
+      <QRScanLanding
+        resolution={resolution}
+        contentType={qr.contentType}
+        landingTheme={landingTheme}
+      />
+    </>
   );
 }
