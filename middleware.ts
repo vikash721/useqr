@@ -36,5 +36,58 @@ export default clerkMiddleware(
     }
 
     return NextResponse.next();
+  },
+  {
+    contentSecurityPolicy: {
+      directives: {
+        "connect-src": [
+          "https://ik.imagekit.io",
+          "https://cdn.paddle.com",
+          "https://api.paddle.com",
+          "https://buy.paddle.com",
+          "https://checkout-service.paddle.com",
+          "https://sandbox-cdn.paddle.com",
+          "https://sandbox-buy.paddle.com",
+          "https://sandbox-checkout-service.paddle.com",
+          "https://*.paddle.com",
+        ],
+        "img-src": [
+          "data:",
+          "blob:",
+          "https://ik.imagekit.io",
+          "https://media0.giphy.com",
+          "https://media1.giphy.com",
+          "https://media2.giphy.com",
+          "https://media3.giphy.com",
+          "https://media4.giphy.com",
+          "https://i.giphy.com",
+        ],
+        "script-src": [
+          "https://cdn.paddle.com",
+          "https://sandbox-cdn.paddle.com",
+        ],
+        "style-src": [
+          "https://fonts.googleapis.com",
+          "https://cdn.paddle.com",
+          "https://sandbox-cdn.paddle.com",
+        ],
+        "font-src": ["https://fonts.gstatic.com", "data:"],
+        "frame-src": [
+          "https://buy.paddle.com",
+          "https://cdn.paddle.com",
+          "https://checkout-service.paddle.com",
+          "https://sandbox-buy.paddle.com",
+          "https://sandbox-cdn.paddle.com",
+          "https://sandbox-checkout-service.paddle.com",
+        ],
+      },
+    },
   }
 );
+
+export const config = {
+  matcher: [
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/(api|trpc)(.*)",
+  ],
+};
