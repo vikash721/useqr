@@ -365,7 +365,7 @@ Check out the live application at **[useqr.codes](https://www.useqr.codes)**
 
 This project is open-sourced temporarily for hackathon evaluation and portfolio purposes. You're welcome to explore the code, learn from the patterns, and get inspired — but please don't copy or redistribute it as your own. All intellectual property rights remain with the author.
 
-**© 2025 Vikash Kumar** · Built with ☕ and a lot of late nights.
+**© 2026 Vikash Kumar** · Built with ☕ and a lot of late nights.
 
 
 
