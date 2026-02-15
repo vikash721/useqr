@@ -50,6 +50,7 @@ export default clerkMiddleware(
           "https://sandbox-buy.paddle.com",
           "https://sandbox-checkout-service.paddle.com",
           "https://*.paddle.com",
+          "https://nominatim.openstreetmap.org",
         ],
         "img-src": [
           "data:",
@@ -61,6 +62,8 @@ export default clerkMiddleware(
           "https://media3.giphy.com",
           "https://media4.giphy.com",
           "https://i.giphy.com",
+          "https://*.tile.openstreetmap.org",
+          "https://unpkg.com",
         ],
         "script-src": [
           "https://cdn.paddle.com",

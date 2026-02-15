@@ -59,6 +59,14 @@ export type CreateQRState = {
   landingTheme: LandingThemeDb;
   /** Whether to track scans and show analytics for this QR */
   analyticsEnabled: boolean;
+  /** Whether geo lock is enabled (restrict scans to a location) */
+  geoLockEnabled: boolean;
+  /** Allowed latitude for geo lock */
+  geoLockLat: number | null;
+  /** Allowed longitude for geo lock */
+  geoLockLng: number | null;
+  /** Allowed radius in meters (30–5000, default 500) */
+  geoLockRadius: number;
 };
 
 export type QRLoadForEdit = {
@@ -75,6 +83,7 @@ export type QRLoadForEdit = {
     email?: { subject?: string; body?: string };
     vcardLostMode?: boolean;
     vcardLostItem?: string;
+    geoLock?: { lat: number; lng: number; radiusMeters: number };
   };
   analyticsEnabled?: boolean;
 };
@@ -103,6 +112,10 @@ export type CreateQRActions = {
   resetQRStyle: () => void;
   setLandingTheme: (theme: LandingThemeDb) => void;
   setAnalyticsEnabled: (enabled: boolean) => void;
+  setGeoLockEnabled: (enabled: boolean) => void;
+  setGeoLockLat: (lat: number | null) => void;
+  setGeoLockLng: (lng: number | null) => void;
+  setGeoLockRadius: (radius: number) => void;
   /** Load existing QR data for edit mode (prefill form and set editingId). */
   loadForEdit: (qr: QRLoadForEdit) => void;
   /** Set preview QR id (used after mount to avoid SSR/client hydration mismatch). */
@@ -138,6 +151,10 @@ const initialState: CreateQRState = {
   qrStyle: {},
   landingTheme: DEFAULT_LANDING_THEME,
   analyticsEnabled: false,
+  geoLockEnabled: false,
+  geoLockLat: null,
+  geoLockLng: null,
+  geoLockRadius: 500,
 };
 
 /** Initial state for store; previewQRId is left empty so server and client match (set on client after mount). */
@@ -173,6 +190,10 @@ export const useCreateQRStore = create<CreateQRState & CreateQRActions>()(
       resetQRStyle: () => set({ qrStyle: {} }),
       setLandingTheme: (landingTheme) => set({ landingTheme }),
       setAnalyticsEnabled: (analyticsEnabled) => set({ analyticsEnabled }),
+      setGeoLockEnabled: (geoLockEnabled) => set({ geoLockEnabled }),
+      setGeoLockLat: (geoLockLat) => set({ geoLockLat }),
+      setGeoLockLng: (geoLockLng) => set({ geoLockLng }),
+      setGeoLockRadius: (geoLockRadius) => set({ geoLockRadius }),
       setPreviewQRId: (previewQRId) => set({ previewQRId }),
       loadForEdit: (qr) => {
         const type = qr.contentType as QRContentType;
@@ -182,6 +203,7 @@ export const useCreateQRStore = create<CreateQRState & CreateQRActions>()(
           email?: { subject?: string; body?: string };
           vcardLostMode?: boolean;
           vcardLostItem?: string;
+          geoLock?: { lat: number; lng: number; radiusMeters: number };
         } | undefined;
         const isPhoneType = type === "phone" || type === "sms" || type === "whatsapp";
         let content = qr.content ?? "";
@@ -258,6 +280,10 @@ export const useCreateQRStore = create<CreateQRState & CreateQRActions>()(
           qrStyle: (qr.style as Partial<QRStyle>) ?? {},
           landingTheme: (qr.landingTheme as LandingThemeDb) ?? DEFAULT_LANDING_THEME,
           analyticsEnabled: qr.analyticsEnabled ?? true,
+          geoLockEnabled: !!meta?.geoLock,
+          geoLockLat: meta?.geoLock?.lat ?? null,
+          geoLockLng: meta?.geoLock?.lng ?? null,
+          geoLockRadius: meta?.geoLock?.radiusMeters ?? 500,
         });
       },
       reset: () => set({ ...getInitialState(), previewQRId: generateQRId() }),
@@ -285,6 +311,10 @@ export const useCreateQRStore = create<CreateQRState & CreateQRActions>()(
         qrStyle: s.qrStyle,
         landingTheme: s.landingTheme,
         analyticsEnabled: s.analyticsEnabled,
+        geoLockEnabled: s.geoLockEnabled,
+        geoLockLat: s.geoLockLat,
+        geoLockLng: s.geoLockLng,
+        geoLockRadius: s.geoLockRadius,
       }),
       // Don't persist previewQRId — fresh per session; draft fields restore on revisit
     }

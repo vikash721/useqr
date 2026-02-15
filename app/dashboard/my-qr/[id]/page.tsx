@@ -13,6 +13,7 @@ import {
   Download,
   ExternalLink,
   Loader2,
+  MapPin,
   Pencil,
   ShieldOff,
   Trash2,
@@ -348,6 +349,12 @@ export default function MyQRDetailPage() {
                       <span className="inline-flex items-center gap-1">
                         <BarChart3 className="size-3.5" />
                         Analytics on
+                      </span>
+                    )}
+                    {!!(qr.metadata as Record<string, unknown> | undefined)?.geoLock && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                        <MapPin className="size-3" />
+                        Geo locked
                       </span>
                     )}
                   </div>

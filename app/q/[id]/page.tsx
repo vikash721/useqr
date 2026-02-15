@@ -6,8 +6,10 @@ import { resolveQRScan } from "@/lib/qr/qr-types";
 import { QRDisabledFallback } from "@/components/qr/QRDisabledFallback";
 import { QRScanLanding } from "@/components/qr/QRScanLanding";
 import { MarkScanSession } from "@/components/qr/MarkScanSession";
+import { GeoGate } from "@/components/qr/GeoGate";
 
 type SmartRedirectUrls = { ios?: string; android?: string; fallback?: string };
+type GeoLock = { lat: number; lng: number; radiusMeters: number };
 
 function getSmartRedirectUrl(redirects: SmartRedirectUrls, userAgent: string): string {
   const ua = userAgent.toLowerCase();
@@ -39,6 +41,10 @@ export default async function ScanPage({ params, searchParams }: Props) {
     return <QRDisabledFallback />;
   }
 
+  // Extract geo lock config (if set)
+  const geoLock = (qr.metadata as Record<string, unknown> | undefined)?.geoLock as GeoLock | undefined;
+  const isGeoLocked = !!(geoLock?.lat != null && geoLock?.lng != null && geoLock?.radiusMeters);
+
   // Prepare UTM params for client-side scan recording
   let utm: { utmSource?: string; utmMedium?: string; utmCampaign?: string; utmContent?: string } | undefined;
   if (qr.analyticsEnabled) {
@@ -52,6 +58,7 @@ export default async function ScanPage({ params, searchParams }: Props) {
 
   const shouldMarkSession = qr.analyticsEnabled;
 
+  // --- Smart redirect ---
   if (qr.contentType === "smart_redirect") {
     const redirects = qr.metadata?.smartRedirect as SmartRedirectUrls | undefined;
     if (redirects && (redirects.ios || redirects.android || redirects.fallback)) {
@@ -59,13 +66,19 @@ export default async function ScanPage({ params, searchParams }: Props) {
       const userAgent = headersList.get("user-agent") ?? "";
       const url = getSmartRedirectUrl(redirects, userAgent);
       if (url) {
-        // Record scan server-side before redirect — MarkScanSession won't mount
+        if (isGeoLocked) {
+          // Geo-locked: validate location client-side first, then redirect
+          if (qr.analyticsEnabled) await recordScan(id, utm);
+          return <GeoGate qrId={id} geoLock={geoLock!} redirectUrl={url} />;
+        }
+        // Not geo-locked: server-side redirect
         if (qr.analyticsEnabled) await recordScan(id, utm);
         redirect(url);
       }
     }
   }
 
+  // --- Resolve content behavior (redirect vs landing) ---
   const resolution = resolveQRScan(
     qr.contentType,
     qr.content,
@@ -73,14 +86,19 @@ export default async function ScanPage({ params, searchParams }: Props) {
   );
 
   if (resolution.behavior === "redirect") {
-    // Record scan server-side before redirect — MarkScanSession won't mount
+    if (isGeoLocked) {
+      // Geo-locked redirect: validate location client-side first
+      if (qr.analyticsEnabled) await recordScan(id, utm);
+      return <GeoGate qrId={id} geoLock={geoLock!} redirectUrl={resolution.url} />;
+    }
+    // Not geo-locked: server-side redirect
     if (qr.analyticsEnabled) await recordScan(id, utm);
     redirect(resolution.url);
   }
 
+  // --- Landing page ---
   const landingTheme = qr.landingTheme ?? "default";
-
-  return (
+  const landingContent = (
     <>
       {shouldMarkSession && <MarkScanSession qrId={id} utm={utm} />}
       <QRScanLanding
@@ -90,4 +108,14 @@ export default async function ScanPage({ params, searchParams }: Props) {
       />
     </>
   );
+
+  if (isGeoLocked) {
+    return (
+      <GeoGate qrId={id} geoLock={geoLock!}>
+        {landingContent}
+      </GeoGate>
+    );
+  }
+
+  return landingContent;
 }

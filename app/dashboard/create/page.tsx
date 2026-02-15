@@ -27,6 +27,7 @@ import {
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { QRCodePreview } from "@/components/qr/QRCodePreview";
 import { QRCustomizeSection } from "@/components/qr/QRCustomizeSection";
+import { GeoLockSection } from "@/components/qr/GeoLockSection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -87,6 +88,10 @@ function CreateQRPageContent() {
   const selectedTemplate = useCreateQRStore((s) => s.selectedTemplate);
   const landingTheme = useCreateQRStore((s) => s.landingTheme);
   const analyticsEnabled = useCreateQRStore((s) => s.analyticsEnabled);
+  const geoLockEnabled = useCreateQRStore((s) => s.geoLockEnabled);
+  const geoLockLat = useCreateQRStore((s) => s.geoLockLat);
+  const geoLockLng = useCreateQRStore((s) => s.geoLockLng);
+  const geoLockRadius = useCreateQRStore((s) => s.geoLockRadius);
   const setSelectedType = useCreateQRStore((s) => s.setSelectedType);
   const setName = useCreateQRStore((s) => s.setName);
   const setContent = useCreateQRStore((s) => s.setContent);
@@ -275,6 +280,16 @@ function CreateQRPageContent() {
     if (selectedType === "vcard" && vcardLostMode) {
       metadata.vcardLostMode = true;
       metadata.vcardLostItem = (vcardLostItem?.trim() || "item").trim();
+    }
+    if (geoLockEnabled && geoLockLat != null && geoLockLng != null) {
+      metadata.geoLock = {
+        lat: geoLockLat,
+        lng: geoLockLng,
+        radiusMeters: geoLockRadius,
+      };
+    } else if (!geoLockEnabled) {
+      // Explicitly null so update clears any existing geoLock in the DB
+      metadata.geoLock = null;
     }
     const effectiveStyle =
       Object.keys(qrStyle).length > 0
@@ -1035,6 +1050,8 @@ function CreateQRPageContent() {
                   )}
                 </p>
               </section>
+
+              <GeoLockSection />
 
               {createError && (
                 <p className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
