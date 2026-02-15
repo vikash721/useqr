@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { ChevronDown, Loader2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ImageCropModal, type CroppedResult } from "@/components/modals/ImageCropModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,7 +57,34 @@ export function QRCustomizeSection() {
   const setQRStyle = useCreateQRStore((s) => s.setQRStyle);
   const resetQRStyle = useCreateQRStore((s) => s.resetQRStyle);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  /** Called when user confirms crop — upload the cropped blob */
+  const handleCropConfirm = async (result: CroppedResult) => {
+    setCropFile(null);
+    setLogoUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", result.blob, "logo-cropped.png");
+      const res = await fetch("/api/upload", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Upload failed");
+      setQRStyle({
+        logo: {
+          url: data.url,
+          size: qrStyle.logo?.size ?? 0.4,
+          hideBackgroundDots: qrStyle.logo?.hideBackgroundDots ?? true,
+        },
+      });
+      toast.success("Logo uploaded");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setLogoUploading(false);
+      URL.revokeObjectURL(result.url);
+    }
+  };
 
   return (
     <section
@@ -248,31 +276,10 @@ export function QRCustomizeSection() {
                 className="absolute h-0 w-0 overflow-hidden opacity-0"
                 tabIndex={-1}
                 aria-hidden
-                onChange={async (e) => {
+                onChange={(e) => {
                   const f = e.target.files?.[0];
-                  if (!f) return;
-                  setLogoUploading(true);
-                  try {
-                    const form = new FormData();
-                    form.append("file", f);
-                    const res = await fetch("/api/upload", { method: "POST", body: form });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.error ?? "Upload failed");
-                    setQRStyle({
-                      logo: {
-                        url: data.url,
-                        size: qrStyle.logo?.size ?? 0.4,
-                        hideBackgroundDots: qrStyle.logo?.hideBackgroundDots ?? true,
-                      },
-                    });
-                    toast.success("Logo uploaded");
-                  } catch (err) {
-                    toast.error(err instanceof Error ? err.message : "Upload failed");
-                  } finally {
-                    setLogoUploading(false);
-                    e.target.value = "";
-                    e.target.blur();
-                  }
+                  if (f) setCropFile(f);
+                  e.target.value = "";
                 }}
                 disabled={logoUploading}
               />
@@ -343,6 +350,13 @@ export function QRCustomizeSection() {
           </div>
         </div>
       </div>
+
+      {/* Image crop modal */}
+      <ImageCropModal
+        file={cropFile}
+        onConfirm={handleCropConfirm}
+        onCancel={() => setCropFile(null)}
+      />
     </section>
   );
 }
