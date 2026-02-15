@@ -50,6 +50,7 @@ import {
   parseEventString,
   type QRTemplateId,
   type QRStyle,
+  type DownloadFormat,
 } from "@/lib/qr";
 import { cn } from "@/lib/utils";
 
@@ -145,11 +146,64 @@ function LostAndFoundSection({
   );
 }
 
-const DOWNLOAD_QUALITIES = [
-  { label: "Standard (512px)", size: 512, description: "Screen & sharing", premium: false },
-  { label: "High (1024px)", size: 1024, description: "Large display & small print", premium: true },
-  { label: "Print (2048px)", size: 2048, description: "High-resolution print", premium: true },
-] as const;
+type DownloadOption = {
+  label: string;
+  size: number;
+  description: string;
+  useCase: string;
+  premium: boolean;
+};
+
+type FormatTab = {
+  id: DownloadFormat;
+  label: string;
+  ext: string;
+  description: string;
+  options: DownloadOption[];
+};
+
+const DOWNLOAD_FORMATS: FormatTab[] = [
+  {
+    id: "png",
+    label: "PNG",
+    ext: "png",
+    description: "Best for screens, social media & print",
+    options: [
+      { label: "Standard", size: 512, description: "512 × 512 px", useCase: "Social media & messaging", premium: false },
+      { label: "High", size: 1024, description: "1024 × 1024 px", useCase: "Presentations & displays", premium: true },
+      { label: "Print", size: 2048, description: "2048 × 2048 px", useCase: "Posters, flyers & signage", premium: true },
+    ],
+  },
+  {
+    id: "svg",
+    label: "SVG",
+    ext: "svg",
+    description: "Scalable vector — perfect at any size",
+    options: [
+      { label: "Vector", size: 512, description: "Infinitely scalable", useCase: "Print design, branding & merch", premium: true },
+    ],
+  },
+  {
+    id: "jpeg",
+    label: "JPEG",
+    ext: "jpg",
+    description: "Smaller file size, great for documents",
+    options: [
+      { label: "Standard", size: 512, description: "512 × 512 px", useCase: "Email attachments & docs", premium: false },
+      { label: "High", size: 1024, description: "1024 × 1024 px", useCase: "Slide decks & reports", premium: true },
+    ],
+  },
+  {
+    id: "webp",
+    label: "WebP",
+    ext: "webp",
+    description: "Modern format — smallest file, web-optimized",
+    options: [
+      { label: "Standard", size: 512, description: "512 × 512 px", useCase: "Websites & web apps", premium: false },
+      { label: "High", size: 1024, description: "1024 × 1024 px", useCase: "High-DPI retina displays", premium: true },
+    ],
+  },
+];
 
 export default function MyQRDetailPage() {
   const params = useParams();
@@ -251,7 +305,10 @@ export default function MyQRDetailPage() {
     }
   };
 
-  const handleDownload = async (size: number) => {
+  const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>("png");
+  const [transparentBg, setTransparentBg] = useState(false);
+
+  const handleDownload = async (size: number, format: DownloadFormat = "png") => {
     if (!qr) return;
     setDownloadLoading(true);
     try {
@@ -260,13 +317,20 @@ export default function MyQRDetailPage() {
         qrId: qr.id,
       });
       const slug = sanitizeFilename(qr.name || qr.id);
-      const filename = `UseQR-${slug}-${size}px.png`;
+      const tab = DOWNLOAD_FORMATS.find((f) => f.id === format);
+      const ext = tab?.ext ?? format;
+      const transSuffix = transparentBg && format !== "jpeg" ? "-transparent" : "";
+      const filename = format === "svg"
+        ? `UseQR-${slug}${transSuffix}.${ext}`
+        : `UseQR-${slug}-${size}px${transSuffix}.${ext}`;
       await downloadQRAsPng({
         data,
         templateId: (qr.template || "classic") as QRTemplateId,
         style: (qr.style ?? undefined) as QRStyle | undefined,
         size,
         filename,
+        format,
+        transparent: transparentBg && format !== "jpeg",
       });
       toast.success(`Downloaded ${filename}`);
     } catch (err) {
@@ -440,30 +504,80 @@ export default function MyQRDetailPage() {
                           ) : (
                             <Download className="size-4" />
                           )}
-                          Download PNG
+                          Download
                           <ChevronDown className="size-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="center" className="min-w-[220px]">
-                        {DOWNLOAD_QUALITIES.map(({ label, size: px, description, premium }) => (
-                          <DropdownMenuItem
-                            key={px}
-                            onClick={() => handleDownload(px)}
-                            disabled={downloadLoading}
-                          >
-                            <div className="flex w-full flex-col items-start gap-0.5">
-                              <span className="flex items-center gap-2 font-medium">
-                                {label}
-                                {premium && (
-                                  <Crown className="size-3.5 shrink-0 text-amber-500" aria-label="Premium" />
-                                )}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {description}
-                              </span>
-                            </div>
-                          </DropdownMenuItem>
-                        ))}
+                      <DropdownMenuContent align="center" className="w-[320px] p-0">
+                        {/* Format tabs */}
+                        <div className="flex border-b border-border">
+                          {DOWNLOAD_FORMATS.map((tab) => (
+                            <button
+                              key={tab.id}
+                              type="button"
+                              onClick={() => setDownloadFormat(tab.id)}
+                              className={cn(
+                                "flex-1 px-3 py-2 text-xs font-medium transition-colors",
+                                downloadFormat === tab.id
+                                  ? "border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400"
+                                  : "text-muted-foreground hover:text-foreground"
+                              )}
+                            >
+                              {tab.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Format description */}
+                        <div className="border-b border-border/50 px-3 py-2">
+                          <p className="text-[11px] text-muted-foreground">
+                            {DOWNLOAD_FORMATS.find((f) => f.id === downloadFormat)?.description}
+                          </p>
+                        </div>
+
+                        {/* Transparent toggle — hidden for JPEG */}
+                        {downloadFormat !== "jpeg" && (
+                          <div className="flex items-center justify-between border-b border-border/50 px-3 py-2">
+                            <span className="text-xs text-muted-foreground">Transparent background</span>
+                            <Switch
+                              checked={transparentBg}
+                              onCheckedChange={setTransparentBg}
+                              className="scale-75"
+                            />
+                          </div>
+                        )}
+
+                        {/* Quality options */}
+                        <div className="p-1">
+                          {DOWNLOAD_FORMATS.find((f) => f.id === downloadFormat)?.options.map(
+                            ({ label, size: px, description, useCase, premium }) => (
+                              <DropdownMenuItem
+                                key={`${downloadFormat}-${px}`}
+                                onClick={() => handleDownload(px, downloadFormat)}
+                                disabled={downloadLoading}
+                                className="flex cursor-pointer items-start gap-3 rounded-md px-3 py-2.5"
+                              >
+                                <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted/80 text-[10px] font-bold text-muted-foreground">
+                                  {downloadFormat === "svg" ? "∞" : px}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <span className="flex items-center gap-1.5 text-sm font-medium">
+                                    {label}
+                                    {premium && (
+                                      <Crown className="size-3 shrink-0 text-amber-500" aria-label="Premium" />
+                                    )}
+                                  </span>
+                                  <span className="block text-xs text-muted-foreground">
+                                    {description}
+                                  </span>
+                                  <span className="mt-0.5 block text-[11px] text-muted-foreground/70">
+                                    {useCase}
+                                  </span>
+                                </div>
+                              </DropdownMenuItem>
+                            )
+                          )}
+                        </div>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>

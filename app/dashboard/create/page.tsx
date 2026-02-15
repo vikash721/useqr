@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -28,6 +28,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { QRCodePreview } from "@/components/qr/QRCodePreview";
 import { QRCustomizeSection } from "@/components/qr/QRCustomizeSection";
 import { GeoLockSection } from "@/components/qr/GeoLockSection";
+import { AnimatedLogo, type AnimatedLogoHandle } from "@/components/AnimatedLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -338,6 +339,16 @@ function CreateQRPageContent() {
   };
 
   const isEditMode = Boolean(editingId);
+  const logoRef = useRef<AnimatedLogoHandle>(null);
+
+  // Loop animation while edit loading
+  useEffect(() => {
+    if (!editLoading) return;
+    const interval = setInterval(() => {
+      logoRef.current?.replay();
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [editLoading]);
 
   if (editLoading) {
     return (
@@ -345,9 +356,13 @@ function CreateQRPageContent() {
         <DashboardHeader />
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
-              <Loader2 className="size-5 animate-spin" />
-              <span>Loading QR for editing...</span>
+            <div className="flex flex-col items-center justify-center py-24">
+              <div className="size-20">
+                <AnimatedLogo ref={logoRef} />
+              </div>
+              <p className="mt-6 text-sm font-medium text-muted-foreground animate-pulse">
+                Loading QR for editing...
+              </p>
             </div>
           </div>
         </div>

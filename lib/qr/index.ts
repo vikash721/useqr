@@ -14,7 +14,7 @@ export { getQRStylingOptions } from "./options";
 export type { QRStylingOptions } from "./options";
 export { buildQRData, getCardBaseUrl } from "./payload";
 export { downloadQRAsPng, sanitizeFilename } from "./download";
-export type { DownloadQROptions } from "./download";
+export type { DownloadQROptions, DownloadFormat } from "./download";
 export type { QRContentType } from "./payload";
 export { buildVCard, parseVCard } from "./vcard";
 export type { VCardFields } from "./vcard";
