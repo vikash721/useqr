@@ -54,47 +54,66 @@ type ThemeStyle = {
 /** Small card preview - mirrors full theme designs in miniature. */
 const PREVIEW_THEME_STYLES: Record<LandingThemeDb, ThemeStyle> = {
   default: {
-    wrapper: "bg-linear-to-b from-slate-50 to-slate-100/80 dark:from-slate-950 dark:to-slate-900/90 rounded-lg",
+    wrapper:
+      "bg-linear-to-b from-zinc-950 via-zinc-950 to-black rounded-lg",
     inner: "p-2",
     container: "flex flex-col gap-1.5 max-w-[110px] mx-auto",
-    scannedLabel: "text-[7px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400",
-    title: "text-[9px] font-semibold text-slate-900 dark:text-slate-50",
-    iconWrapper: "flex size-5 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 mb-1",
-    contentBlock: "rounded-lg border border-slate-200/80 dark:border-slate-700/80 bg-white/90 dark:bg-slate-800/90 p-1.5",
-    cta: "rounded-md bg-emerald-600 text-white text-[8px] font-medium px-2 py-1 flex items-center justify-center gap-1",
+    scannedLabel:
+      "text-[7px] font-semibold uppercase tracking-widest text-emerald-400/80",
+    title: "text-[9px] font-semibold text-zinc-50",
+    iconWrapper:
+      "flex size-5 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 mb-1",
+    contentBlock:
+      "rounded-lg border border-white/10 bg-zinc-900/80 p-1.5",
+    cta:
+      "rounded-md bg-emerald-500 text-black text-[8px] font-medium px-2 py-1 flex items-center justify-center gap-1",
     showIcon: true,
   },
   minimal: {
-    wrapper: "bg-white dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800",
+    wrapper:
+      "bg-slate-50 rounded-lg border border-slate-200",
     inner: "p-1.5",
     container: "flex flex-col gap-1 max-w-[100px] text-left",
-    scannedLabel: "text-[6px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-800 pb-1 w-fit",
-    title: "text-[8px] font-medium text-slate-900 dark:text-slate-100",
+    scannedLabel:
+      "text-[6px] font-medium uppercase tracking-widest text-slate-500 border-b border-dashed border-slate-200 pb-1 w-full",
+    title: "mt-0.5 text-[8px] font-medium text-slate-900",
     iconWrapper: "hidden",
-    contentBlock: "rounded-none border-b border-slate-200 dark:border-slate-800 py-1.5 text-[7px] text-slate-600 dark:text-slate-300",
-    cta: "rounded-none border-b-2 border-slate-900 dark:border-slate-100 text-[8px] font-medium py-2 flex items-center justify-center",
+    contentBlock:
+      "border-l border-slate-200 py-1.5 pl-1.5 text-[7px] text-slate-600",
+    cta:
+      "border-b border-slate-900 text-[8px] font-medium py-2 flex items-center justify-between",
     showIcon: false,
   },
   card: {
-    wrapper: "bg-linear-to-br from-amber-50/60 via-orange-50/40 to-slate-100/80 dark:from-slate-900 dark:to-slate-950 rounded-lg",
+    wrapper:
+      "bg-linear-to-b from-zinc-950 via-zinc-900 to-black rounded-lg",
     inner: "p-2",
     container: "flex flex-col gap-1.5 max-w-[110px] mx-auto",
-    scannedLabel: "text-[6px] font-semibold uppercase text-amber-700/80 dark:text-amber-400/80",
-    title: "text-[9px] font-bold text-slate-900 dark:text-slate-50",
-    iconWrapper: "flex size-6 items-center justify-center rounded-lg bg-amber-500/20 dark:bg-amber-400/20 text-amber-700 dark:text-amber-300 mb-1",
-    contentBlock: "rounded-lg border-2 border-amber-200/80 dark:border-amber-800/60 bg-white dark:bg-slate-800 shadow-md p-2",
-    cta: "rounded-md bg-amber-500 text-white text-[8px] font-semibold px-2 py-1.5 flex items-center justify-center",
+    scannedLabel:
+      "text-[6px] font-semibold uppercase text-emerald-300/90",
+    title: "text-[9px] font-bold text-zinc-50",
+    iconWrapper:
+      "flex size-6 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 mb-1",
+    contentBlock:
+      "rounded-lg border border-white/10 bg-zinc-950/90 shadow-md p-2",
+    cta:
+      "rounded-md bg-emerald-500 text-black text-[8px] font-semibold px-2 py-1.5 flex items-center justify-center",
     showIcon: true,
   },
   full: {
-    wrapper: "bg-linear-to-b from-indigo-600 via-indigo-700 to-indigo-900 dark:from-indigo-950 dark:to-slate-950 rounded-lg relative overflow-hidden",
+    wrapper:
+      "bg-linear-to-b from-emerald-500/20 via-zinc-950 to-black rounded-lg relative overflow-hidden",
     inner: "p-2 relative z-10",
     container: "flex flex-col gap-1.5 max-w-[110px] mx-auto text-center",
-    scannedLabel: "text-[6px] font-semibold uppercase tracking-widest text-indigo-200 dark:text-indigo-300/90",
+    scannedLabel:
+      "text-[6px] font-semibold uppercase tracking-widest text-emerald-100/90",
     title: "text-[9px] font-bold text-white",
-    iconWrapper: "flex size-6 items-center justify-center rounded-lg bg-white/20 text-white border border-white/20 mb-1",
-    contentBlock: "rounded-lg border border-white/20 bg-white/10 text-[7px] text-white/95 p-2",
-    cta: "rounded-lg bg-white text-indigo-700 text-[8px] font-bold px-2 py-1.5 flex items-center justify-center",
+    iconWrapper:
+      "flex size-6 items-center justify-center rounded-lg bg-white/10 text-white border border-white/30 mb-1",
+    contentBlock:
+      "rounded-lg border border-white/15 bg-white/5 text-[7px] text-white/95 p-2",
+    cta:
+      "rounded-lg bg-white text-zinc-950 text-[8px] font-bold px-2 py-1.5 flex items-center justify-center",
     showIcon: true,
   },
 };
@@ -102,47 +121,66 @@ const PREVIEW_THEME_STYLES: Record<LandingThemeDb, ThemeStyle> = {
 /** Popup (larger) preview - same themes, readable size. */
 const POPUP_THEME_STYLES: Record<LandingThemeDb, ThemeStyle> = {
   default: {
-    wrapper: "bg-linear-to-b from-slate-50 to-slate-100/80 dark:from-slate-950 dark:to-slate-900/90 rounded-2xl min-h-[340px]",
+    wrapper:
+      "bg-linear-to-b from-zinc-950 via-zinc-950 to-black rounded-2xl min-h-[340px]",
     inner: "p-5",
     container: "flex flex-col gap-4 max-w-[220px] mx-auto",
-    scannedLabel: "text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400",
-    title: "text-base font-semibold text-slate-900 dark:text-slate-50",
-    iconWrapper: "flex size-10 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 mb-2",
-    contentBlock: "rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-white/90 dark:bg-slate-800/90 p-3 text-xs",
-    cta: "rounded-xl bg-emerald-600 text-white text-sm font-medium px-4 py-3 flex items-center justify-center gap-2",
+    scannedLabel:
+      "text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-400/80",
+    title: "text-base font-semibold text-zinc-50",
+    iconWrapper:
+      "flex size-10 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 mb-2",
+    contentBlock:
+      "rounded-xl border border-white/10 bg-zinc-900/80 p-3 text-xs text-zinc-200",
+    cta:
+      "rounded-xl bg-emerald-500 text-black text-sm font-medium px-4 py-3 flex items-center justify-center gap-2",
     showIcon: true,
   },
   minimal: {
-    wrapper: "bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 min-h-[340px]",
+    wrapper:
+      "bg-slate-50 rounded-2xl border border-slate-200 min-h-[340px]",
     inner: "p-4",
     container: "flex flex-col gap-3 max-w-[200px] text-left",
-    scannedLabel: "text-[9px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-800 pb-2 w-fit",
-    title: "text-sm font-medium text-slate-900 dark:text-slate-100",
+    scannedLabel:
+      "text-[9px] font-medium uppercase tracking-widest text-slate-500 border-b border-dashed border-slate-200 pb-2 w-full",
+    title: "mt-2 text-base font-medium text-slate-900",
     iconWrapper: "hidden",
-    contentBlock: "rounded-none border-b border-slate-200 dark:border-slate-800 py-3 text-xs text-slate-600 dark:text-slate-300",
-    cta: "rounded-none border-b-2 border-slate-900 dark:border-slate-100 text-sm font-medium py-4 flex items-center justify-center gap-2",
+    contentBlock:
+      "border-l border-slate-200 py-3 pl-3 text-xs text-slate-600",
+    cta:
+      "border-b border-slate-900 text-sm font-medium py-4 flex items-center justify-between gap-2",
     showIcon: false,
   },
   card: {
-    wrapper: "bg-linear-to-br from-amber-50/60 via-orange-50/40 to-slate-100/80 dark:from-slate-900 dark:to-slate-950 rounded-2xl min-h-[340px]",
+    wrapper:
+      "bg-linear-to-b from-zinc-950 via-zinc-900 to-black rounded-2xl min-h-[340px]",
     inner: "p-5",
     container: "flex flex-col gap-4 max-w-[220px] mx-auto",
-    scannedLabel: "text-[9px] font-semibold uppercase text-amber-700/80 dark:text-amber-400/80",
-    title: "text-lg font-bold text-slate-900 dark:text-slate-50",
-    iconWrapper: "flex size-12 items-center justify-center rounded-xl bg-amber-500/20 dark:bg-amber-400/20 text-amber-700 dark:text-amber-300 mb-2",
-    contentBlock: "rounded-xl border-2 border-amber-200/80 dark:border-amber-800/60 bg-white dark:bg-slate-800 shadow-lg p-4 text-xs",
-    cta: "rounded-xl bg-amber-500 text-white text-sm font-semibold px-5 py-3 flex items-center justify-center gap-2",
+    scannedLabel:
+      "text-[9px] font-semibold uppercase text-emerald-300/90",
+    title: "text-lg font-bold text-zinc-50",
+    iconWrapper:
+      "flex size-12 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 mb-2",
+    contentBlock:
+      "rounded-xl border border-white/10 bg-zinc-950/90 shadow-lg p-4 text-xs text-zinc-200",
+    cta:
+      "rounded-xl bg-emerald-500 text-black text-sm font-semibold px-5 py-3 flex items-center justify-center gap-2",
     showIcon: true,
   },
   full: {
-    wrapper: "bg-linear-to-b from-indigo-600 via-indigo-700 to-indigo-900 dark:from-indigo-950 dark:to-slate-950 rounded-2xl min-h-[360px] relative overflow-hidden",
+    wrapper:
+      "bg-linear-to-b from-emerald-500/20 via-zinc-950 to-black rounded-2xl min-h-[360px] relative overflow-hidden",
     inner: "p-6 relative z-10",
     container: "flex flex-col gap-4 max-w-[240px] mx-auto text-center",
-    scannedLabel: "text-[10px] font-semibold uppercase tracking-widest text-indigo-200 dark:text-indigo-300/90",
+    scannedLabel:
+      "text-[10px] font-semibold uppercase tracking-widest text-emerald-100/90",
     title: "text-xl font-bold text-white",
-    iconWrapper: "flex size-12 items-center justify-center rounded-xl bg-white/20 text-white border border-white/20 mb-2",
-    contentBlock: "rounded-xl border border-white/20 bg-white/10 text-xs text-white/95 p-4",
-    cta: "rounded-xl bg-white text-indigo-700 text-sm font-bold px-6 py-3 flex items-center justify-center gap-2",
+    iconWrapper:
+      "flex size-12 items-center justify-center rounded-xl bg-white/10 text-white border border-white/30 mb-2",
+    contentBlock:
+      "rounded-xl border border-white/15 bg-white/5 text-xs text-white/95 p-4",
+    cta:
+      "rounded-xl bg-white text-zinc-950 text-sm font-bold px-6 py-3 flex items-center justify-center gap-2",
     showIcon: true,
   },
 };

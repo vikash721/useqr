@@ -23,6 +23,7 @@ export type LandingThemeConfig = {
   title: string;
   iconWrapper: string;
   contentBlock: string;
+  contentTitle?: string;
   cta: string;
   ctaSecondary: string;
   footer: string;
@@ -44,76 +45,89 @@ export type LandingThemeOption = {
 const SCAN_PAGE_CONFIG: Record<LandingThemeDb, LandingThemeConfig> = {
   default: {
     wrapper:
-      "min-h-svh bg-linear-to-b from-slate-50 to-slate-100/80 dark:from-slate-950 dark:to-slate-900/90",
-    inner: "px-4 py-10 sm:py-14",
-    container: "w-full max-w-sm mx-auto flex flex-col gap-6",
+      "min-h-svh bg-linear-to-b from-zinc-950 via-zinc-950 to-black text-zinc-50",
+    inner: "px-5 py-10 sm:py-16",
+    container: "w-full max-w-md mx-auto flex flex-col gap-6",
     scannedLabel:
-      "text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400",
-    title: "text-xl font-semibold text-slate-900 dark:text-slate-50 tracking-tight",
+      "text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-400/80",
+    title:
+      "text-2xl sm:text-3xl font-semibold text-white tracking-tight",
     iconWrapper:
-      "flex size-12 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 mb-2",
+      "flex size-12 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 mb-3",
     contentBlock:
-      "rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-sm p-5",
-    cta: "rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-md hover:shadow-lg transition-all active:scale-[0.98] min-h-12 px-5 py-3 flex items-center justify-center gap-3",
+      "rounded-2xl border border-white/10 bg-zinc-900/80 backdrop-blur-md shadow-[0_18px_60px_rgba(0,0,0,0.75)] px-5 py-4 sm:px-6 sm:py-5",
+    contentTitle: "text-zinc-50",
+    cta:
+      "rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-medium shadow-lg shadow-emerald-500/30 transition-all active:scale-[0.98] min-h-12 px-5 py-3 flex items-center justify-center gap-3 text-sm sm:text-base",
     ctaSecondary:
-      "rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-medium hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all min-h-12 px-5 py-3 flex items-center justify-center gap-3",
+      "rounded-xl border border-white/15 bg-zinc-900/80 text-zinc-200 hover:bg-zinc-800/80 transition-all min-h-11 px-5 py-3 flex items-center justify-center gap-3 text-sm",
     footer:
-      "py-4 text-center border-t border-slate-200/50 dark:border-slate-700/50",
+      "py-4 text-center border-t border-white/10 text-xs text-zinc-500",
     showHeaderIcon: true,
   },
   minimal: {
-    wrapper: "min-h-svh bg-white dark:bg-slate-950",
-    inner: "px-5 py-12 sm:py-16",
-    container: "w-full max-w-xs mx-auto flex flex-col gap-6 text-left",
+    wrapper: "min-h-svh bg-slate-50 text-slate-900",
+    inner: "px-5 py-10 sm:py-16",
+    container:
+      "w-full max-w-lg mx-auto flex flex-col gap-5 text-left rounded-2xl border border-slate-200 bg-white/90 px-5 py-5 sm:px-6 sm:py-6 shadow-sm",
     scannedLabel:
-      "text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-800 pb-2 w-fit",
-    title: "text-lg font-medium text-slate-900 dark:text-slate-100 tracking-tight",
+      "text-[10px] font-medium uppercase tracking-[0.28em] text-slate-400 border-b border-dashed border-slate-200 pb-2 w-full text-left",
+    title:
+      "mt-2 text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight text-left",
     iconWrapper: "hidden",
     contentBlock:
-      "rounded-none border-b border-slate-200 dark:border-slate-800 bg-transparent py-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed",
-    cta: "rounded-none border-b-2 border-slate-900 dark:border-slate-100 bg-transparent text-slate-900 dark:text-slate-100 font-medium hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors min-h-14 px-0 py-4 flex items-center justify-center gap-3 w-full",
+      "mt-2 border-l border-slate-200 bg-transparent pl-4 py-3 text-sm text-slate-600 leading-relaxed",
+    contentTitle: "text-slate-900",
+    cta:
+      "mt-2 rounded-full border border-slate-900 bg-slate-900 text-slate-50 font-medium hover:bg-slate-800 transition-colors min-h-11 px-4 py-2.5 flex items-center justify-between gap-3 w-full text-sm",
     ctaSecondary:
-      "rounded-none border-b border-slate-200 dark:border-slate-800 bg-transparent text-slate-600 dark:text-slate-400 font-medium min-h-12 px-0 py-3 flex items-center justify-center gap-3",
+      "rounded-full border border-slate-200 bg-transparent text-slate-600 hover:bg-slate-50/80 font-medium min-h-11 px-4 py-2.5 flex items-center justify-between gap-3 w-full text-sm",
     footer:
-      "py-6 text-center text-[11px] text-slate-400 dark:text-slate-500 tracking-wide",
+      "py-6 text-center text-[11px] text-slate-400 tracking-wide",
     showHeaderIcon: false,
   },
   card: {
     wrapper:
-      "min-h-svh bg-linear-to-br from-amber-50/60 via-orange-50/40 to-slate-100/80 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950",
-    inner: "px-5 py-10 sm:py-14 sm:px-6",
-    container: "w-full max-w-sm mx-auto flex flex-col gap-7",
+      "min-h-svh bg-linear-to-b from-zinc-950 via-zinc-900 to-black text-zinc-50",
+    inner: "px-5 py-10 sm:py-16 sm:px-6",
+    container: "w-full max-w-md mx-auto flex flex-col gap-7",
     scannedLabel:
-      "text-xs font-semibold uppercase tracking-[0.18em] text-amber-700/90 dark:text-amber-400/90",
-    title: "text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-50 tracking-tight leading-tight",
+      "text-xs font-semibold uppercase tracking-[0.25em] text-emerald-300/90",
+    title:
+      "text-2xl sm:text-3xl font-semibold text-white tracking-tight leading-tight",
     iconWrapper:
-      "flex size-14 items-center justify-center rounded-2xl bg-amber-500/20 dark:bg-amber-400/20 text-amber-700 dark:text-amber-300 mb-3",
+      "flex size-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 mb-3",
     contentBlock:
-      "rounded-2xl border-2 border-amber-200/80 dark:border-amber-800/60 bg-white dark:bg-slate-800 shadow-xl shadow-amber-900/5 dark:shadow-black/20 p-6 sm:p-8 text-slate-700 dark:text-slate-200 leading-relaxed",
-    cta: "rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/30 transition-all active:scale-[0.98] min-h-14 px-6 py-4 flex items-center justify-center gap-3 text-base",
+      "rounded-3xl border border-white/10 bg-zinc-950/90 shadow-[0_22px_70px_rgba(0,0,0,0.85)] px-6 py-5 sm:px-7 sm:py-6 text-zinc-200 leading-relaxed",
+    contentTitle: "text-zinc-50",
+    cta:
+      "rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-semibold shadow-lg shadow-emerald-500/40 transition-all active:scale-[0.98] min-h-14 px-6 py-4 flex items-center justify-center gap-3 text-base",
     ctaSecondary:
-      "rounded-xl border-2 border-amber-300 dark:border-amber-600 bg-amber-50/50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 font-medium min-h-12 px-5 py-3 flex items-center justify-center gap-3",
+      "rounded-full border border-emerald-400/60 bg-transparent text-emerald-200 hover:bg-emerald-500/10 transition-all min-h-12 px-5 py-3 flex items-center justify-center gap-3 text-sm",
     footer:
-      "py-5 text-center text-xs text-slate-500 dark:text-slate-400 tracking-wide",
+      "py-5 text-center text-xs text-zinc-500 tracking-wide",
     showHeaderIcon: true,
   },
   full: {
     wrapper:
-      "min-h-svh bg-linear-to-b from-indigo-600 via-indigo-700 to-indigo-900 dark:from-indigo-950 dark:via-indigo-900 dark:to-slate-950 relative overflow-hidden",
+      "min-h-svh bg-linear-to-b from-emerald-500/20 via-zinc-950 to-black relative overflow-hidden text-zinc-50",
     inner: "relative z-10 px-4 py-14 sm:py-24",
     container: "w-full max-w-md mx-auto flex flex-col gap-8 text-center",
     scannedLabel:
-      "text-xs font-semibold uppercase tracking-[0.25em] text-indigo-200 dark:text-indigo-300/90",
-    title: "text-3xl sm:text-4xl font-bold text-white tracking-tight",
+      "text-xs font-semibold uppercase tracking-[0.3em] text-emerald-200/90",
+    title:
+      "text-3xl sm:text-4xl font-bold text-white tracking-tight",
     iconWrapper:
-      "flex size-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm text-white border border-white/20 mb-4",
+      "flex size-16 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm text-white border border-white/25 mb-4",
     contentBlock:
-      "rounded-2xl border border-white/20 bg-white/10 dark:bg-white/5 backdrop-blur-md shadow-2xl p-6 sm:p-8 text-left text-white/95",
-    cta: "rounded-2xl bg-white text-indigo-700 hover:bg-indigo-50 font-bold shadow-xl hover:shadow-2xl transition-all active:scale-[0.98] min-h-16 px-8 py-4 flex items-center justify-center gap-4 text-lg",
+      "rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl shadow-[0_26px_90px_rgba(0,0,0,0.9)] p-6 sm:p-8 text-left text-white/95",
+    contentTitle: "text-white",
+    cta:
+      "rounded-2xl bg-white text-zinc-950 hover:bg-zinc-100 font-bold shadow-xl hover:shadow-2xl transition-all active:scale-[0.98] min-h-16 px-8 py-4 flex items-center justify-center gap-4 text-lg",
     ctaSecondary:
-      "rounded-2xl border-2 border-white/40 bg-white/10 text-white font-semibold backdrop-blur-sm hover:bg-white/20 transition-all min-h-14 px-6 py-4 flex items-center justify-center gap-3",
+      "rounded-2xl border-2 border-white/40 bg-transparent text-white font-semibold backdrop-blur-sm hover:bg-white/10 transition-all min-h-14 px-6 py-4 flex items-center justify-center gap-3",
     footer:
-      "py-6 text-center text-xs text-indigo-200/80 dark:text-indigo-300/70",
+      "py-6 text-center text-xs text-emerald-100/80",
     showHeaderIcon: true,
   },
 };

@@ -36,14 +36,18 @@ function StructuredContentBlock({
 }: {
   contentType: QRContentTypeDb;
   structured: unknown;
-  config: { contentBlock: string };
+  config: { contentBlock: string; contentTitle?: string };
 }) {
   if (contentType === "vcard" && structured && typeof structured === "object" && "firstName" in structured) {
     const v = structured as { firstName?: string; lastName?: string; organization?: string; phone?: string; email?: string };
     const name = [v.firstName, v.lastName].filter(Boolean).join(" ").trim();
     return (
       <div className={cn("overflow-hidden text-left space-y-1", config.contentBlock)}>
-        {name && <p className="font-semibold text-foreground">{name}</p>}
+        {name && (
+          <p className={cn("font-semibold", config.contentTitle ?? "text-foreground")}>
+            {name}
+          </p>
+        )}
         {v.organization && <p className="text-sm text-muted-foreground">{v.organization}</p>}
         {v.phone && <p className="text-sm">{v.phone}</p>}
         {v.email && <p className="text-sm">{v.email}</p>}
@@ -72,7 +76,9 @@ function StructuredContentBlock({
     };
     return (
       <div className={cn("overflow-hidden text-left space-y-1", config.contentBlock)}>
-        <p className="font-semibold text-foreground">{e.title}</p>
+        <p className={cn("font-semibold", config.contentTitle ?? "text-foreground")}>
+          {e.title}
+        </p>
         {e.start && <p className="text-sm text-muted-foreground">Start: {formatDate(e.start)}</p>}
         {e.end && <p className="text-sm text-muted-foreground">End: {formatDate(e.end)}</p>}
         {e.location && <p className="text-sm">{e.location}</p>}
