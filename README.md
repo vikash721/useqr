@@ -355,62 +355,9 @@ When a single QR is deleted from the dashboard, `deleteQR()` and `deleteScanEven
 
 ---
 
-## 🚀 Getting Started
+## 🌐 Live Demo
 
-### Prerequisites
-*   Node.js 18+
-*   MongoDB Atlas Cluster
-*   Clerk Account
-*   Paddle Sandbox Account (for payments)
-
-### Installation
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/yourusername/useqr.git
-    cd useqr
-    ```
-
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
-
-3.  **Environment Setup:**
-    Create a `.env` file in the root directory:
-    ```env
-    # App
-    NEXT_PUBLIC_APP_URL=http://localhost:3000
-
-    # Database
-    MONGODB_URI=mongodb+srv://...
-
-    # Auth (Clerk)
-    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-    CLERK_SECRET_KEY=sk_test_...
-    CLERK_WEBHOOK_SIGNING_SECRET=whsec_...
-
-    # Payments (Paddle)
-    NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=...
-    PADDLE_API_KEY=...
-    PADDLE_WEBHOOK_SECRET=...
-    PADDLE_PRICE_ID_STARTER=...
-
-    # Services
-    RESEND_API_KEY=...
-    IMAGEKIT_URL_ENDPOINT=...
-    IMAGEKIT_PRIVATE_KEY=...
-
-    # Notifications (optional)
-    TELEGRAM_BOT_TOKEN=...
-    TELEGRAM_CHAT_ID=...
-    ```
-
-4.  **Run Development Server:**
-    ```bash
-    npm run dev
-    ```
-    Open [http://localhost:3000](http://localhost:3000) to view the app.
+Check out the live application at **[useqr.codes](https://www.useqr.codes)**
 
 ---
 
