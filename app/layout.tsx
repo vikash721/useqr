@@ -8,6 +8,7 @@ import { PaddleProvider } from "@/components/providers/PaddleProvider";
 import { Toaster } from "@/components/Toaster";
 import { UserSyncOnMount } from "@/components/UserSyncOnMount";
 import { VisitTelegramNotify } from "@/components/VisitTelegramNotify";
+import { ClarityScript } from "@/components/analytics/ClarityScript";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -159,6 +160,7 @@ export default function RootLayout({
           </Suspense>
           <ConditionalSidebarLayout>{children}</ConditionalSidebarLayout>
             <Toaster />
+            <ClarityScript />
           </PaddleProvider>
         </ClerkProvider>
       </body>
