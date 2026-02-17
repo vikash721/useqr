@@ -61,7 +61,7 @@ import {
 } from "@/lib/qr";
 import { cn } from "@/lib/utils";
 import type { LandingThemeDb } from "@/lib/db/schemas/qr";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const PHONE_TYPES = ["phone", "sms", "whatsapp"] as const;
 function isPhoneType(
@@ -253,8 +253,8 @@ function CreateQRPageContent() {
   const editId = searchParams.get("edit");
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-  const [editLoading, setEditLoading] = useState(!!editId);
-  const [editError, setEditError] = useState<string | null>(null);
+  // const [editLoading, setEditLoading] = useState(!!editId);
+  // const [editError, setEditError] = useState<string | null>(null);
   const [previewThemeId, setPreviewThemeId] = useState<LandingThemeDb | null>(
     null,
   );
@@ -275,41 +275,24 @@ function CreateQRPageContent() {
     if (previewQRId === "") setPreviewQRId(generateQRId());
   }, [previewQRId, setPreviewQRId]);
 
+  const {
+    data: editQr,
+    isLoading: editLoading,
+    error: editError,
+  } = useQuery({
+    queryKey: ["qrs", "detail", editId],
+    queryFn: () => qrsApi.get(editId!),
+    enabled: !!editId,
+  });
+
   useEffect(() => {
-    if (!editId || !editId.trim()) {
-      setEditLoading(false);
-      if (editingId) reset();
-      return;
-    }
-    let cancelled = false;
-    setEditLoading(true);
-    setEditError(null);
-    qrsApi
-      .get(editId)
-      .then((qr) => {
-        if (!cancelled)
-          loadForEdit({
-            ...qr,
-            style: qr.style as import("@/lib/qr").QRStyle | undefined,
-          });
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setEditError(
-            err?.response?.status === 404
-              ? "QR code not found."
-              : (err?.response?.data?.error ??
-                  "Failed to load QR for editing."),
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setEditLoading(false);
+    if (editQr) {
+      loadForEdit({
+        ...editQr,
+        style: editQr.style as import("@/lib/qr").QRStyle | undefined,
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [editId, loadForEdit, editingId, reset]);
+    }
+  }, [editQr, loadForEdit]);
 
   const handleSaveDraft = () => {
     toast.success("Draft saved — continue anytime from My QRs.");
@@ -520,7 +503,11 @@ function CreateQRPageContent() {
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
             <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-6 py-8 text-center">
-              <p className="text-sm text-destructive">{editError}</p>
+              <p className="text-sm text-destructive">
+                {editError instanceof Error
+                  ? editError.message
+                  : "Failed to load QR for editing."}
+              </p>
               <Button asChild variant="outline" className="mt-4">
                 <Link href="/dashboard/my-qrs">Back to My QRs</Link>
               </Button>
