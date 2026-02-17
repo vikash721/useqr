@@ -61,7 +61,9 @@ import {
 } from "@/lib/qr";
 import { cn } from "@/lib/utils";
 import type { LandingThemeDb } from "@/lib/db/schemas/qr";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { qrKeys } from "@/lib/query/keys";
+import { useCreateQR, useUpdateQR } from "@/lib/query/mutations";
 
 const PHONE_TYPES = ["phone", "sms", "whatsapp"] as const;
 function isPhoneType(
@@ -259,7 +261,8 @@ function CreateQRPageContent() {
     null,
   );
   const { modalState, handleError, closeModal } = usePlanRestrictionModal();
-  const queryClient = useQueryClient();
+  const createMutation = useCreateQR();
+  const updateMutation = useUpdateQR();
 
   // Disable main page (body) scroll only on this page to avoid weird UI from double scroll.
   useEffect(() => {
@@ -268,6 +271,17 @@ function CreateQRPageContent() {
     return () => {
       document.body.style.overflow = prev;
     };
+  }, []);
+
+  // If we landed on /dashboard/create WITHOUT ?edit=, but the store still holds
+  // editingId from a previous edit session (persisted in localStorage), clear it
+  // so the form starts fresh.  Drafts for new creations (editingId === null) are
+  // intentionally preserved so users don't lose progress on a page refresh.
+  useEffect(() => {
+    if (!editId && editingId) {
+      reset();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on mount
   }, []);
 
   // Set preview id after mount so server and client render the same initial value (avoids hydration mismatch).
@@ -280,7 +294,7 @@ function CreateQRPageContent() {
     isLoading: editLoading,
     error: editError,
   } = useQuery({
-    queryKey: ["qrs", "detail", editId],
+    queryKey: qrKeys.detail(editId!),
     queryFn: () => qrsApi.get(editId!),
     enabled: !!editId,
   });
@@ -432,14 +446,12 @@ function CreateQRPageContent() {
         ...(editingId ? {} : { status: "active" as const }),
       };
       if (editingId) {
-        await qrsApi.update(editingId, body);
-        queryClient.invalidateQueries({ queryKey: ["qrs"] });
+        await updateMutation.mutateAsync({ id: editingId, body });
         reset();
         toast.success("QR code updated.");
         router.push(`/dashboard/my-qr/${editingId}`);
       } else {
-        const { qr } = await qrsApi.create({ ...body, status: "active" });
-        queryClient.invalidateQueries({ queryKey: ["qrs", "list"] });
+        const { qr } = await createMutation.mutateAsync({ ...body, status: "active" });
         reset();
         toast.success("QR code created.");
         router.push(`/dashboard/my-qr/${qr.id}`);

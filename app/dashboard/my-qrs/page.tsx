@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { QRTemplateId, QRStyle } from "@/lib/qr";
 import { useQuery } from "@tanstack/react-query";
+import { qrKeys } from "@/lib/query/keys";
 
 function formatContentType(type: string): string {
   const map: Record<string, string> = {
@@ -54,8 +55,9 @@ export default function MyQRsPage() {
     data,
     isLoading: loading,
     error,
+    refetch,
   } = useQuery<QRListResponse>({
-    queryKey: ["qrs", "list", { limit: 50, skip: 0 }],
+    queryKey: qrKeys.list({ limit: 50, skip: 0 }),
     queryFn: () => qrsApi.list({ limit: 50, skip: 0 }),
   });
 
@@ -179,7 +181,7 @@ export default function MyQRsPage() {
               </p>
               <button
                 type="button"
-                onClick={() => window.location.reload()}
+                onClick={() => refetch()}
                 className="mt-3 text-sm font-medium text-foreground underline hover:no-underline"
               >
                 Retry

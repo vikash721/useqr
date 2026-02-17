@@ -52,7 +52,9 @@ import {
   type DownloadFormat,
 } from "@/lib/qr";
 import { cn } from "@/lib/utils";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { qrKeys } from "@/lib/query/keys";
+import { useDeleteQR, useUpdateQRStatus, useToggleLostMode } from "@/lib/query/mutations";
 
 /** Formatted one-line summary for detail page content block (vcard/wifi/event/email). */
 function getContentSummary(
@@ -271,31 +273,27 @@ export default function MyQRDetailPage() {
   const router = useRouter();
   const id = typeof params?.id === "string" ? params.id : "";
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
-  const [statusUpdating, setStatusUpdating] = useState(false);
-  const [lostUpdating, setLostUpdating] = useState(false);
   const [downloadLoading, setDownloadLoading] = useState(false);
 
   const {
     data: qr,
     isLoading: loading,
     error,
-    refetch,
   } = useQuery({
-    queryKey: ["qrs", "detail", id],
+    queryKey: qrKeys.detail(id),
     queryFn: () => qrsApi.get(id),
     enabled: !!id,
   });
 
-  const queryClient = useQueryClient();
+  const deleteMutation = useDeleteQR();
+  const statusMutation = useUpdateQRStatus(id);
+  const lostModeMutation = useToggleLostMode(id);
 
   const handleDelete = async () => {
     if (!id) return;
-    setDeleting(true);
     try {
-      await qrsApi.delete(id);
-      queryClient.invalidateQueries({ queryKey: ["qrs"] });
+      await deleteMutation.mutateAsync(id);
       toast.success("QR code deleted.");
       router.push("/dashboard/my-qrs");
     } catch (err: unknown) {
@@ -303,21 +301,13 @@ export default function MyQRDetailPage() {
         (err as { response?: { data?: { error?: string } } })?.response?.data
           ?.error ?? "Failed to delete. Try again.";
       toast.error(msg);
-      setDeleting(false);
     }
-  };
-
-  const updateQrCache = (updated: QRListItem) => {
-    queryClient.setQueryData(["qrs", "detail", id], updated);
-    queryClient.invalidateQueries({ queryKey: ["qrs", "list"] });
   };
 
   const handleStatusChange = async (newStatus: string) => {
     if (!id || !qr) return;
-    setStatusUpdating(true);
     try {
-      const updated = await qrsApi.update(id, { status: newStatus });
-      updateQrCache(updated);
+      await statusMutation.mutateAsync(newStatus);
       toast.success(
         newStatus === "active"
           ? "QR code is now active. Scans will work."
@@ -328,22 +318,13 @@ export default function MyQRDetailPage() {
         (err as { response?: { data?: { error?: string } } })?.response?.data
           ?.error ?? "Failed to update status. Try again.";
       toast.error(msg);
-    } finally {
-      setStatusUpdating(false);
     }
   };
 
   const handleLostModeChange = async (enabled: boolean) => {
     if (!id || !qr) return;
-    setLostUpdating(true);
     try {
-      const meta = (qr.metadata ?? {}) as Record<string, unknown>;
-      const item =
-        typeof meta.vcardLostItem === "string" ? meta.vcardLostItem : "";
-      const updated = await qrsApi.update(id, {
-        metadata: { ...meta, vcardLostMode: enabled, vcardLostItem: item },
-      });
-      updateQrCache(updated);
+      await lostModeMutation.mutateAsync(enabled);
       toast.success(
         enabled
           ? "Lost & found message enabled."
@@ -354,8 +335,6 @@ export default function MyQRDetailPage() {
         (err as { response?: { data?: { error?: string } } })?.response?.data
           ?.error ?? "Failed to update. Try again.";
       toast.error(msg);
-    } finally {
-      setLostUpdating(false);
     }
   };
 
@@ -691,7 +670,7 @@ export default function MyQRDetailPage() {
                     {qr.contentType === "vcard" && (
                       <LostAndFoundSection
                         qr={qr}
-                        lostUpdating={lostUpdating}
+                        lostUpdating={lostModeMutation.isPending}
                         onLostModeChange={handleLostModeChange}
                       />
                     )}
@@ -743,9 +722,9 @@ export default function MyQRDetailPage() {
                               variant="outline"
                               size="sm"
                               className="gap-2"
-                              disabled={statusUpdating}
+                              disabled={statusMutation.isPending}
                             >
-                              {statusUpdating ? (
+                              {statusMutation.isPending ? (
                                 <Loader2 className="size-4 animate-spin" />
                               ) : qr.status === "active" ? (
                                 <>
@@ -798,7 +777,7 @@ export default function MyQRDetailPage() {
                 qrId={qr.id}
                 analyticsEnabled={qr.analyticsEnabled}
                 scanCount={qr.scanCount ?? 0}
-                onAnalyticsChange={() => refetch()}
+                onAnalyticsChange={() => {}}
               />
             </div>
           )}
@@ -830,7 +809,7 @@ export default function MyQRDetailPage() {
             <Button
               variant="outline"
               onClick={() => setDeleteOpen(false)}
-              disabled={deleting}
+              disabled={deleteMutation.isPending}
               className="sm:min-w-[88px]"
             >
               Cancel
@@ -838,10 +817,10 @@ export default function MyQRDetailPage() {
             <Button
               variant="destructive"
               onClick={handleDelete}
-              disabled={deleting}
+              disabled={deleteMutation.isPending}
               className="gap-2 sm:min-w-[100px]"
             >
-              {deleting ? (
+              {deleteMutation.isPending ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
                 <>

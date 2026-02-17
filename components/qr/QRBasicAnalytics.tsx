@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+
 import Link from "next/link";
 import { BarChart3, ChevronRight, Loader2, ScanLine, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { qrsApi } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { useEnableAnalytics } from "@/lib/query/mutations";
 
 export interface QRBasicAnalyticsProps {
   qrId: string;
@@ -29,12 +29,11 @@ export function QRBasicAnalytics({
   onAnalyticsChange,
   className,
 }: QRBasicAnalyticsProps) {
-  const [enabling, setEnabling] = useState(false);
+  const enableAnalytics = useEnableAnalytics(qrId);
 
   const handleTurnOn = async () => {
-    setEnabling(true);
     try {
-      await qrsApi.update(qrId, { analyticsEnabled: true });
+      await enableAnalytics.mutateAsync();
       toast.success("Analytics enabled.");
       onAnalyticsChange?.();
     } catch (err: unknown) {
@@ -42,8 +41,6 @@ export function QRBasicAnalytics({
         (err as { response?: { data?: { error?: string } } })?.response?.data
           ?.error ?? "Could not enable analytics. Try again.";
       toast.error(msg);
-    } finally {
-      setEnabling(false);
     }
   };
 
@@ -124,9 +121,9 @@ export function QRBasicAnalytics({
             variant="outline"
             className="shrink-0 gap-2 border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-600 dark:text-emerald-400 dark:hover:bg-emerald-500/10"
             onClick={handleTurnOn}
-            disabled={enabling}
+            disabled={enableAnalytics.isPending}
           >
-            {enabling ? (
+            {enableAnalytics.isPending ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
               <TrendingUp className="size-4" />

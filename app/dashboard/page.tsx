@@ -13,6 +13,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { qrsApi } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
+import { qrKeys } from "@/lib/query/keys";
 
 function formatContentType(type: string): string {
   const map: Record<string, string> = {
@@ -31,8 +32,8 @@ function formatContentType(type: string): string {
 }
 
 export default function DashboardPage() {
-  const { data, isLoading: loading } = useQuery({
-    queryKey: ["qrs", "list", { limit: 50, skip: 0 }],
+  const { data, isLoading: loading, error } = useQuery({
+    queryKey: qrKeys.list({ limit: 50, skip: 0 }),
     queryFn: () => qrsApi.list({ limit: 50, skip: 0 }),
   });
 
@@ -80,6 +81,14 @@ export default function DashboardPage() {
               loading={loading}
             />
           </div>
+
+          {error && (
+            <div className="mb-8 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-4 text-center">
+              <p className="text-sm text-destructive">
+                {error instanceof Error ? error.message : "Failed to load dashboard data."}
+              </p>
+            </div>
+          )}
 
           {/* Quick actions */}
           <div className="mb-8">

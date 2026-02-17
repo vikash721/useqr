@@ -42,6 +42,7 @@ import { qrsApi, type ScanByDay } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
+import { qrKeys } from "@/lib/query/keys";
 
 function formatContentType(type: string): string {
   const map: Record<string, string> = {
@@ -115,49 +116,13 @@ function getPresetRange(
 export default function AnalyticsDetailPage() {
   const params = useParams();
   const id = typeof params.id === "string" ? params.id : "";
-  // const [data, setData] = useState<Awaited<
-  //   ReturnType<typeof qrsApi.getAnalytics>
-  // > | null>(null);
-  // const [loading, setLoading] = useState(true);
-  // const [error, setError] = useState<string | null>(null);
 
-  // useEffect(() => {
-  //   if (!id) {
-  //     setLoading(false);
-  //     setError("Invalid QR id");
-  //     return;
-  //   }
-  //   let cancelled = false;
-  //   setLoading(true);
-  //   setError(null);
-  //   qrsApi
-  //     .getAnalytics(id)
-  //     .then((res) => {
-  //       if (!cancelled) setData(res);
-  //     })
-  //     .catch((err) => {
-  //       if (!cancelled) {
-  //         setData(null);
-  //         setError(
-  //           err?.response?.status === 404
-  //             ? "QR code not found."
-  //             : err?.response?.data?.error ?? "Failed to load analytics."
-  //         );
-  //       }
-  //     })
-  //     .finally(() => {
-  //       if (!cancelled) setLoading(false);
-  //     });
-  //   return () => {
-  //     cancelled = true;
-  //   };
-  // }, [id]);
   const {
     data,
     isLoading: loading,
     error,
   } = useQuery({
-    queryKey: ["qrs", "analytics", id],
+    queryKey: qrKeys.analytic(id),
     queryFn: () => qrsApi.getAnalytics(id),
     enabled: !!id,
   });

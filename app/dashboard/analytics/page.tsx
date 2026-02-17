@@ -15,7 +15,7 @@ import { qrsApi, type QRListItem } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUserStore } from "@/stores/useUserStore";
 import { useQuery } from "@tanstack/react-query";
-import { skip } from "node:test";
+import { qrKeys } from "@/lib/query/keys";
 
 function formatContentType(type: string): string {
   const map: Record<string, string> = {
@@ -44,7 +44,7 @@ export default function AnalyticsPage() {
     isLoading: loading,
     error,
   } = useQuery({
-    queryKey: ["qrs", "list", {limit: 50, skip: 0}],
+    queryKey: qrKeys.list({ limit: 50, skip: 0 }),
     queryFn: () => qrsApi.list({ limit: 50, skip: 0 }),
   });
 

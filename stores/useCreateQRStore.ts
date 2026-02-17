@@ -291,6 +291,7 @@ export const useCreateQRStore = create<CreateQRState & CreateQRActions>()(
     {
       name: "useqr-create-draft",
       partialize: (s) => ({
+        editingId: s.editingId,
         selectedType: s.selectedType,
         name: s.name,
         content: s.content,
