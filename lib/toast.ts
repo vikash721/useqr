@@ -62,17 +62,4 @@ export function dismiss(id?: string | number) {
   return sonnerToast.dismiss(id);
 }
 
-const DEV_NOTICE_TOAST_ID = "dev-notice";
 
-/**
- * Development notice — "Under Development - we're working on it"
- * Used on landing page; user can close. Uses fixed id so refresh/visit shows one toast.
- */
-export function showDevelopmentNotice() {
-  return sonnerToast.info("Under Development", {
-    id: DEV_NOTICE_TOAST_ID,
-    description: "We're working on it. You can close this toast.",
-    duration: Infinity,
-    closeButton: true,
-  });
-}

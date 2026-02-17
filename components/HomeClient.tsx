@@ -20,7 +20,7 @@ import ScrollFloat from "@/components/ScrollFloat";
 import { UseCaseCard } from "@/components/UseCaseCard";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { scanApi } from "@/lib/api";
-import { showDevelopmentNotice } from "@/lib/toast";
+
 import { useScanStore } from "@/stores/useScanStore";
 import { useShouldShowHeader } from "@/utils/sidebar";
 
@@ -270,15 +270,7 @@ export default function HomeClient({
     };
   }, [showHeader, qrId, scanStatus?.scanned, setScanStatus, sseReconnectKey, scanWaitingPaused]);
 
-  // Development notice on landing — show on every refresh/visit (delay so Toaster is mounted). Skip when view=am.
-  useEffect(() => {
-    if (!showHeader && searchParams.get("view") !== "am") {
-      const timer = setTimeout(() => {
-        showDevelopmentNotice();
-      }, 200);
-      return () => clearTimeout(timer);
-    }
-  }, [showHeader, searchParams]);
+
 
   const missionPassedOpen = Boolean(scanStatus?.scanned);
 
