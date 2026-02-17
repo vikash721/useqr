@@ -450,7 +450,7 @@ function CreateQRPageContent() {
       };
       if (editingId) {
         await qrsApi.update(editingId, body);
-        queryClient.invalidateQueries({ queryKey: ["qrs", "list"] });
+        queryClient.invalidateQueries({ queryKey: ["qrs"] });
         reset();
         toast.success("QR code updated.");
         router.push(`/dashboard/my-qr/${editingId}`);
