@@ -9,6 +9,7 @@ import { Toaster } from "@/components/Toaster";
 import { UserSyncOnMount } from "@/components/UserSyncOnMount";
 import { VisitTelegramNotify } from "@/components/VisitTelegramNotify";
 import { QueryProvider } from "@/components/providers/QueryProvider";
+import { ClarityScript } from "@/components/analytics/ClarityScript";
 import "./globals.css";
 
 const geistSans = Geist({

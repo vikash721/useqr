@@ -51,6 +51,8 @@ export default clerkMiddleware(
           "https://sandbox-checkout-service.paddle.com",
           "https://*.paddle.com",
           "https://nominatim.openstreetmap.org",
+          "https://*.clarity.ms",
+          "https://c.bing.com",
         ],
         "img-src": [
           "data:",
@@ -64,10 +66,15 @@ export default clerkMiddleware(
           "https://i.giphy.com",
           "https://*.tile.openstreetmap.org",
           "https://unpkg.com",
+          "https://*.clarity.ms",
+          "https://c.bing.com",
         ],
         "script-src": [
           "https://cdn.paddle.com",
           "https://sandbox-cdn.paddle.com",
+          "https://*.clarity.ms",
+          "https://c.bing.com",
+          "'unsafe-inline'",
         ],
         "style-src": [
           "https://fonts.googleapis.com",
