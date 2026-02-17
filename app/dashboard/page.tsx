@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   BarChart3,
@@ -11,9 +10,9 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { qrsApi, type QRListItem } from "@/lib/api";
+import { qrsApi } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 
 function formatContentType(type: string): string {
   const map: Record<string, string> = {
@@ -32,34 +31,13 @@ function formatContentType(type: string): string {
 }
 
 export default function DashboardPage() {
-  const [qrs, setQrs] = useState<QRListItem[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["qrs", "list", { limit: 50, skip: 0 }],
+    queryFn: () => qrsApi.list({ limit: 50, skip: 0 }),
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    qrsApi
-      .list({ limit: 10, skip: 0 })
-      .then((data) => {
-        if (!cancelled) {
-          setQrs(data.qrs);
-          setTotal(data.total);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setQrs([]);
-          setTotal(0);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const qrs = data?.qrs ?? [];
+  const total = data?.total ?? 0;
 
   const activeCount = qrs.filter((q) => q.status === "active").length;
   const totalScans = qrs.reduce((sum, q) => sum + (q.scanCount ?? 0), 0);
@@ -117,7 +95,9 @@ export default function DashboardPage() {
                   <Plus className="size-6" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-foreground">Create QR code</p>
+                  <p className="font-semibold text-foreground">
+                    Create QR code
+                  </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     New link, contact, or content
                   </p>
@@ -217,7 +197,8 @@ export default function DashboardPage() {
                             {qr.name || "Unnamed QR"}
                           </p>
                           <p className="truncate text-xs text-muted-foreground">
-                            {formatContentType(qr.contentType)} · {qr.scanCount ?? 0} scans
+                            {formatContentType(qr.contentType)} ·{" "}
+                            {qr.scanCount ?? 0} scans
                           </p>
                         </div>
                         <ArrowRight className="size-4 shrink-0 text-muted-foreground" />

@@ -12,6 +12,7 @@
     "@clerk/nextjs": "^6.37.3",
     "@imagekit/nodejs": "^7.3.0",
     "@radix-ui/react-switch": "^1.2.6",
+    "@tanstack/react-query": "^5.90.21",
     "@types/leaflet": "^1.9.21",
     "axios": "^1.13.4",
     "class-variance-authority": "^0.7.1",

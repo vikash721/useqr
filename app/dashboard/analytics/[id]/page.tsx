@@ -41,6 +41,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { qrsApi, type ScanByDay } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 
 function formatContentType(type: string): string {
   const map: Record<string, string> = {
@@ -83,7 +84,7 @@ const PRESET_LABELS: Record<Preset, string> = {
 
 function getPresetRange(
   preset: Preset,
-  createdAt: string
+  createdAt: string,
 ): { from: string; to: string } {
   const today = new Date();
   const toStr = toLocalDateStr;
@@ -114,51 +115,63 @@ function getPresetRange(
 export default function AnalyticsDetailPage() {
   const params = useParams();
   const id = typeof params.id === "string" ? params.id : "";
-  const [data, setData] = useState<Awaited<ReturnType<typeof qrsApi.getAnalytics>> | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // const [data, setData] = useState<Awaited<
+  //   ReturnType<typeof qrsApi.getAnalytics>
+  // > | null>(null);
+  // const [loading, setLoading] = useState(true);
+  // const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!id) {
-      setLoading(false);
-      setError("Invalid QR id");
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    qrsApi
-      .getAnalytics(id)
-      .then((res) => {
-        if (!cancelled) setData(res);
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setData(null);
-          setError(
-            err?.response?.status === 404
-              ? "QR code not found."
-              : err?.response?.data?.error ?? "Failed to load analytics."
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
+  // useEffect(() => {
+  //   if (!id) {
+  //     setLoading(false);
+  //     setError("Invalid QR id");
+  //     return;
+  //   }
+  //   let cancelled = false;
+  //   setLoading(true);
+  //   setError(null);
+  //   qrsApi
+  //     .getAnalytics(id)
+  //     .then((res) => {
+  //       if (!cancelled) setData(res);
+  //     })
+  //     .catch((err) => {
+  //       if (!cancelled) {
+  //         setData(null);
+  //         setError(
+  //           err?.response?.status === 404
+  //             ? "QR code not found."
+  //             : err?.response?.data?.error ?? "Failed to load analytics."
+  //         );
+  //       }
+  //     })
+  //     .finally(() => {
+  //       if (!cancelled) setLoading(false);
+  //     });
+  //   return () => {
+  //     cancelled = true;
+  //   };
+  // }, [id]);
+  const {
+    data,
+    isLoading: loading,
+    error,
+  } = useQuery({
+    queryKey: ["qrs", "analytics", id],
+    queryFn: () => qrsApi.getAnalytics(id),
+    enabled: !!id,
+  });
 
   const createdAt = data?.qr.createdAt ?? "";
   const { min: rangeMin, max: rangeMax } = useMemo(
-    () => (data ? getDateRangeFromScans(data.scansByDay) : { min: "", max: "" }),
-    [data]
+    () =>
+      data ? getDateRangeFromScans(data.scansByDay) : { min: "", max: "" },
+    [data],
   );
 
   const defaultRange = useMemo(
     () => getPresetRange("last7", createdAt),
-    [createdAt]
+    [createdAt],
   );
 
   const [dateFrom, setDateFrom] = useState("");
@@ -169,7 +182,12 @@ export default function AnalyticsDetailPage() {
   useEffect(() => {
     // Initialize date range once when data and defaultRange are both ready.
     // Use a ref to ensure this only runs once, avoiding complex dependency issues.
-    if (!initializedRef.current && data && defaultRange.from && defaultRange.to) {
+    if (
+      !initializedRef.current &&
+      data &&
+      defaultRange.from &&
+      defaultRange.to
+    ) {
       setDateFrom(defaultRange.from);
       setDateTo(defaultRange.to);
       initializedRef.current = true;
@@ -183,11 +201,12 @@ export default function AnalyticsDetailPage() {
       setDateFrom(range.from);
       setDateTo(range.to);
     },
-    [createdAt]
+    [createdAt],
   );
 
   const filteredScansByDay = useMemo(() => {
-    const from = dateFrom || rangeMin || (data?.qr?.createdAt?.slice(0, 10) ?? "");
+    const from =
+      dateFrom || rangeMin || (data?.qr?.createdAt?.slice(0, 10) ?? "");
     const to = dateTo || rangeMax || toLocalDateStr(new Date());
     if (!from || !to || !data) return data?.scansByDay ?? [];
 
@@ -282,7 +301,7 @@ export default function AnalyticsDetailPage() {
           <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
             <div className="rounded-xl border border-border bg-card p-8 text-center shadow-sm">
               <p className="text-sm text-muted-foreground">
-                {error ?? "QR code not found."}
+                {error instanceof Error ? error.message : "QR code not found."}
               </p>
               <Link
                 href="/dashboard/analytics"
@@ -347,11 +366,7 @@ export default function AnalyticsDetailPage() {
             <StatCard label="Countries" value={uniqueCountries} icon={Globe} />
             <StatCard
               label="Last scanned"
-              value={
-                lastScannedAt
-                  ? formatShortDate(lastScannedAt)
-                  : "Never"
-              }
+              value={lastScannedAt ? formatShortDate(lastScannedAt) : "Never"}
               icon={Calendar}
               valueClassName="text-sm"
             />
@@ -530,7 +545,7 @@ function StatCard({
       <p
         className={cn(
           "mt-2 text-lg font-semibold tracking-tight text-foreground",
-          valueClassName
+          valueClassName,
         )}
       >
         {value}

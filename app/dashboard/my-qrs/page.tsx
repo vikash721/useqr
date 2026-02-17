@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   Grid2X2,
@@ -13,10 +13,11 @@ import {
 } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { QRCodePreview } from "@/components/qr/QRCodePreview";
-import { qrsApi, type QRListItem } from "@/lib/api";
+import { qrsApi, type QRListItem, type QRListResponse } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { QRTemplateId, QRStyle } from "@/lib/qr";
+import { useQuery } from "@tanstack/react-query";
 
 function formatContentType(type: string): string {
   const map: Record<string, string> = {
@@ -48,38 +49,18 @@ function formatDate(iso: string): string {
 
 export default function MyQRsPage() {
   const [view, setView] = useState<"grid" | "list">("grid");
-  const [qrs, setQrs] = useState<QRListItem[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    qrsApi
-      .list({ limit: 50, skip: 0 })
-      .then((data) => {
-        if (cancelled) return;
-        setQrs(data.qrs);
-        setTotal(data.total);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setQrs([]);
-        setTotal(0);
-        setError(
-          err?.response?.data?.error ?? "Failed to load QR codes. Try again."
-        );
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const {
+    data,
+    isLoading: loading,
+    error,
+  } = useQuery<QRListResponse>({
+    queryKey: ["qrs", "list", { limit: 50, skip: 0 }],
+    queryFn: () => qrsApi.list({ limit: 50, skip: 0 }),
+  });
 
+  const qrs = data?.qrs ?? [];
+  const total = data?.total;
   const activeCount = qrs.filter((q) => q.status === "active").length;
   const totalScans = qrs.reduce((sum, q) => sum + (q.scanCount ?? 0), 0);
 
@@ -137,7 +118,7 @@ export default function MyQRsPage() {
                   onClick={() => setView("grid")}
                   className={cn(
                     "inline-flex size-9 items-center justify-center rounded-l-md text-muted-foreground transition-colors",
-                    view === "grid" && "bg-muted/60 text-foreground"
+                    view === "grid" && "bg-muted/60 text-foreground",
                   )}
                   aria-label="Grid view"
                 >
@@ -148,7 +129,7 @@ export default function MyQRsPage() {
                   onClick={() => setView("list")}
                   className={cn(
                     "inline-flex size-9 items-center justify-center rounded-r-md border-l border-border text-muted-foreground transition-colors",
-                    view === "list" && "bg-muted/60 text-foreground"
+                    view === "list" && "bg-muted/60 text-foreground",
                   )}
                   aria-label="List view"
                 >
@@ -193,7 +174,9 @@ export default function MyQRsPage() {
 
           {!loading && error && (
             <div className="mt-8 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-6 text-center">
-              <p className="text-sm text-destructive">{error}</p>
+              <p className="text-sm text-destructive">
+                {error instanceof Error ? error.message : "error"}
+              </p>
               <button
                 type="button"
                 onClick={() => window.location.reload()}
@@ -210,7 +193,7 @@ export default function MyQRsPage() {
                 "mt-8",
                 view === "grid"
                   ? "grid gap-6 sm:grid-cols-2 xl:grid-cols-3"
-                  : "flex flex-col gap-4"
+                  : "flex flex-col gap-4",
               )}
             >
               {qrs.map((qr) => (
@@ -218,8 +201,7 @@ export default function MyQRsPage() {
                   key={qr.id}
                   className={cn(
                     "overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all hover:border-emerald-500/40 hover:shadow-md",
-                    view === "list" &&
-                      "flex flex-row items-center gap-6 py-1"
+                    view === "list" && "flex flex-row items-center gap-6 py-1",
                   )}
                 >
                   {/* QR thumbnail + type badge */}
@@ -228,7 +210,7 @@ export default function MyQRsPage() {
                       "relative flex shrink-0 items-center justify-center border-border bg-muted/20",
                       view === "grid"
                         ? "w-full rounded-t-2xl border-b p-6"
-                        : "m-4 size-24 rounded-xl border p-2"
+                        : "m-4 size-24 rounded-xl border p-2",
                     )}
                   >
                     <QRCodePreview
@@ -244,7 +226,7 @@ export default function MyQRsPage() {
                         "absolute rounded-md bg-background/95 px-2 py-0.5 text-[11px] font-medium text-muted-foreground shadow-sm ring-1 ring-border/50 backdrop-blur-sm",
                         view === "grid"
                           ? "bottom-2 right-2"
-                          : "bottom-1 right-1"
+                          : "bottom-1 right-1",
                       )}
                     >
                       {formatContentType(qr.contentType)}
@@ -255,7 +237,7 @@ export default function MyQRsPage() {
                   <div
                     className={cn(
                       "min-w-0 flex-1",
-                      view === "grid" ? "px-5 pb-5 pt-1" : "py-4 pr-4"
+                      view === "grid" ? "px-5 pb-5 pt-1" : "py-4 pr-4",
                     )}
                   >
                     <Link

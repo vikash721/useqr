@@ -1,13 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BarChart3, QrCode, TrendingUp, Zap, Crown, Globe, Smartphone } from "lucide-react";
+import {
+  BarChart3,
+  QrCode,
+  TrendingUp,
+  Crown,
+  Globe,
+  Smartphone,
+} from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { qrsApi, type QRListItem } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUserStore } from "@/stores/useUserStore";
+import { useQuery } from "@tanstack/react-query";
 
 function formatContentType(type: string): string {
   const map: Record<string, string> = {
@@ -26,36 +33,21 @@ function formatContentType(type: string): string {
 }
 
 export default function AnalyticsPage() {
-  const [qrs, setQrs] = useState<QRListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const user = useUserStore((s) => s.user);
   const router = useRouter();
 
   const isFreePlan = user?.plan === "free";
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    qrsApi
-      .list({ limit: 50 })
-      .then((data) => {
-        if (!cancelled) setQrs(data.qrs);
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setQrs([]);
-          setError(err?.response?.data?.error ?? "Failed to load QR codes.");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const {
+    data,
+    isLoading: loading,
+    error,
+  } = useQuery({
+    queryKey: ["qrs", "list"],
+    queryFn: () => qrsApi.list({ limit: 50, skip: 0 }),
+  });
+
+  const qrs = data?.qrs ?? [];
 
   return (
     <>
@@ -95,22 +87,34 @@ export default function AnalyticsPage() {
                     <div className="mb-2 flex size-9 items-center justify-center rounded-lg bg-emerald-500/10">
                       <TrendingUp className="size-5 text-emerald-600 dark:text-emerald-500" />
                     </div>
-                    <h4 className="mb-1 text-sm font-semibold text-foreground">Interactive Graphs</h4>
-                    <p className="text-xs text-muted-foreground">Visual scan trends & patterns</p>
+                    <h4 className="mb-1 text-sm font-semibold text-foreground">
+                      Interactive Graphs
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      Visual scan trends & patterns
+                    </p>
                   </div>
                   <div className="rounded-lg border border-border bg-muted/30 p-4">
                     <div className="mb-2 flex size-9 items-center justify-center rounded-lg bg-blue-500/10">
                       <Globe className="size-5 text-blue-600 dark:text-blue-500" />
                     </div>
-                    <h4 className="mb-1 text-sm font-semibold text-foreground">Location Analytics</h4>
-                    <p className="text-xs text-muted-foreground">Country & city-wise data</p>
+                    <h4 className="mb-1 text-sm font-semibold text-foreground">
+                      Location Analytics
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      Country & city-wise data
+                    </p>
                   </div>
                   <div className="rounded-lg border border-border bg-muted/30 p-4">
                     <div className="mb-2 flex size-9 items-center justify-center rounded-lg bg-purple-500/10">
                       <Smartphone className="size-5 text-purple-600 dark:text-purple-500" />
                     </div>
-                    <h4 className="mb-1 text-sm font-semibold text-foreground">Device Insights</h4>
-                    <p className="text-xs text-muted-foreground">iOS, Android & desktop stats</p>
+                    <h4 className="mb-1 text-sm font-semibold text-foreground">
+                      Device Insights
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      iOS, Android & desktop stats
+                    </p>
                   </div>
                 </div>
 
@@ -118,8 +122,12 @@ export default function AnalyticsPage() {
                   <div className="flex items-center gap-3">
                     <Crown className="size-5 text-amber-500" />
                     <div>
-                      <p className="text-sm font-medium text-foreground">Starter Plan</p>
-                      <p className="text-xs text-muted-foreground">Includes CSV export & 60-day retention</p>
+                      <p className="text-sm font-medium text-foreground">
+                        Starter Plan
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Includes CSV export & 60-day retention
+                      </p>
                     </div>
                   </div>
                   <button
@@ -146,7 +154,9 @@ export default function AnalyticsPage() {
 
               {!loading && error && (
                 <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-6">
-                  <p className="text-sm text-destructive">{error}</p>
+                  <p className="text-sm text-destructive">
+                    {error instanceof Error ? error.message : "error"}
+                  </p>
                 </div>
               )}
 

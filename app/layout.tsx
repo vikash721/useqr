@@ -8,6 +8,7 @@ import { PaddleProvider } from "@/components/providers/PaddleProvider";
 import { Toaster } from "@/components/Toaster";
 import { UserSyncOnMount } from "@/components/UserSyncOnMount";
 import { VisitTelegramNotify } from "@/components/VisitTelegramNotify";
+import { QueryProvider } from "@/components/providers/QueryProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -38,16 +39,16 @@ export const metadata: Metadata = {
   },
   description: defaultDescription,
   keywords: [
-  "dynamic qr code generator",
-  "free dynamic qr code generator",
-  "custom qr code generator with logo",
-  "qr code generator with analytics",
-  "trackable qr codes",
-  "editable qr codes",
-  "reusable qr codes",
-  "qr code generator for business",
-  "multiple qr code types",
-  "UseQR dynamic qr platform"
+    "dynamic qr code generator",
+    "free dynamic qr code generator",
+    "custom qr code generator with logo",
+    "qr code generator with analytics",
+    "trackable qr codes",
+    "editable qr codes",
+    "reusable qr codes",
+    "qr code generator for business",
+    "multiple qr code types",
+    "UseQR dynamic qr platform",
   ],
   authors: [{ name: "UseQR", url: siteUrl }],
   creator: "UseQR",
@@ -138,30 +139,34 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
-      >
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
-        />
-        <ClerkProvider>
-          <PaddleProvider>
-            <UserSyncOnMount />
-            <VisitTelegramNotify />
-          <Suspense fallback={null}>
-            <AMThanksModal />
-          </Suspense>
-          <ConditionalSidebarLayout>{children}</ConditionalSidebarLayout>
-            <Toaster />
-          </PaddleProvider>
-        </ClerkProvider>
-      </body>
-    </html>
+    <QueryProvider>
+      <html lang="en" className="dark">
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
+        >
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(organizationJsonLd),
+            }}
+          />
+          <ClerkProvider>
+            <PaddleProvider>
+              <UserSyncOnMount />
+              <VisitTelegramNotify />
+              <Suspense fallback={null}>
+                <AMThanksModal />
+              </Suspense>
+              <ConditionalSidebarLayout>{children}</ConditionalSidebarLayout>
+              <Toaster />
+            </PaddleProvider>
+          </ClerkProvider>
+        </body>
+      </html>
+    </QueryProvider>
   );
 }

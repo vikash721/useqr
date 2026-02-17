@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -25,7 +25,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -53,9 +52,13 @@ import {
   type DownloadFormat,
 } from "@/lib/qr";
 import { cn } from "@/lib/utils";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 /** Formatted one-line summary for detail page content block (vcard/wifi/event/email). */
-function getContentSummary(contentType: string, content: string | undefined): string | null {
+function getContentSummary(
+  contentType: string,
+  content: string | undefined,
+): string | null {
   const raw = (content ?? "").trim();
   if (!raw) return null;
   switch (contentType) {
@@ -74,12 +77,22 @@ function getContentSummary(contentType: string, content: string | undefined): st
     case "event": {
       const e = parseEventString(raw);
       if (!e?.title) return null;
-      const when = e.start ? new Date(e.start).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" }) : "";
+      const when = e.start
+        ? new Date(e.start).toLocaleString(undefined, {
+            dateStyle: "short",
+            timeStyle: "short",
+          })
+        : "";
       return when ? `${e.title} — ${when}` : e.title;
     }
     case "email": {
       const toMatch = raw.match(/mailto:([^?]+)/);
-      const to = toMatch ? toMatch[1].trim() : raw.replace(/^mailto:/, "").split("?")[0].trim();
+      const to = toMatch
+        ? toMatch[1].trim()
+        : raw
+            .replace(/^mailto:/, "")
+            .split("?")[0]
+            .trim();
       return to || null;
     }
     default:
@@ -169,9 +182,27 @@ const DOWNLOAD_FORMATS: FormatTab[] = [
     ext: "png",
     description: "Best for screens, social media & print",
     options: [
-      { label: "Standard", size: 512, description: "512 × 512 px", useCase: "Social media & messaging", premium: false },
-      { label: "High", size: 1024, description: "1024 × 1024 px", useCase: "Presentations & displays", premium: true },
-      { label: "Print", size: 2048, description: "2048 × 2048 px", useCase: "Posters, flyers & signage", premium: true },
+      {
+        label: "Standard",
+        size: 512,
+        description: "512 × 512 px",
+        useCase: "Social media & messaging",
+        premium: false,
+      },
+      {
+        label: "High",
+        size: 1024,
+        description: "1024 × 1024 px",
+        useCase: "Presentations & displays",
+        premium: true,
+      },
+      {
+        label: "Print",
+        size: 2048,
+        description: "2048 × 2048 px",
+        useCase: "Posters, flyers & signage",
+        premium: true,
+      },
     ],
   },
   {
@@ -180,7 +211,13 @@ const DOWNLOAD_FORMATS: FormatTab[] = [
     ext: "svg",
     description: "Scalable vector — perfect at any size",
     options: [
-      { label: "Vector", size: 512, description: "Infinitely scalable", useCase: "Print design, branding & merch", premium: true },
+      {
+        label: "Vector",
+        size: 512,
+        description: "Infinitely scalable",
+        useCase: "Print design, branding & merch",
+        premium: true,
+      },
     ],
   },
   {
@@ -189,8 +226,20 @@ const DOWNLOAD_FORMATS: FormatTab[] = [
     ext: "jpg",
     description: "Smaller file size, great for documents",
     options: [
-      { label: "Standard", size: 512, description: "512 × 512 px", useCase: "Email attachments & docs", premium: false },
-      { label: "High", size: 1024, description: "1024 × 1024 px", useCase: "Slide decks & reports", premium: true },
+      {
+        label: "Standard",
+        size: 512,
+        description: "512 × 512 px",
+        useCase: "Email attachments & docs",
+        premium: false,
+      },
+      {
+        label: "High",
+        size: 1024,
+        description: "1024 × 1024 px",
+        useCase: "Slide decks & reports",
+        premium: true,
+      },
     ],
   },
   {
@@ -199,8 +248,20 @@ const DOWNLOAD_FORMATS: FormatTab[] = [
     ext: "webp",
     description: "Modern format — smallest file, web-optimized",
     options: [
-      { label: "Standard", size: 512, description: "512 × 512 px", useCase: "Websites & web apps", premium: false },
-      { label: "High", size: 1024, description: "1024 × 1024 px", useCase: "High-DPI retina displays", premium: true },
+      {
+        label: "Standard",
+        size: 512,
+        description: "512 × 512 px",
+        useCase: "Websites & web apps",
+        premium: false,
+      },
+      {
+        label: "High",
+        size: 1024,
+        description: "1024 × 1024 px",
+        useCase: "High-DPI retina displays",
+        premium: true,
+      },
     ],
   },
 ];
@@ -209,9 +270,6 @@ export default function MyQRDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = typeof params?.id === "string" ? params.id : "";
-  const [qr, setQr] = useState<QRListItem | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
@@ -219,39 +277,25 @@ export default function MyQRDetailPage() {
   const [lostUpdating, setLostUpdating] = useState(false);
   const [downloadLoading, setDownloadLoading] = useState(false);
 
-  const fetchQr = useCallback(() => {
-    if (!id) {
-      setError("Invalid QR id");
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    qrsApi
-      .get(id)
-      .then((data) => {
-        setQr(data);
-      })
-      .catch((err) => {
-        setQr(null);
-        setError(
-          err?.response?.status === 404
-            ? "QR code not found."
-            : err?.response?.data?.error ?? "Failed to load QR code."
-        );
-      })
-      .finally(() => setLoading(false));
-  }, [id]);
+  const {
+    data: qr,
+    isLoading: loading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["qrs", "detail", id],
+    queryFn: () => qrsApi.get(id),
+    enabled: !!id,
+  });
 
-  useEffect(() => {
-    fetchQr();
-  }, [fetchQr]);
+  const queryClient = useQueryClient();
 
   const handleDelete = async () => {
     if (!id) return;
     setDeleting(true);
     try {
       await qrsApi.delete(id);
+      queryClient.invalidateQueries({ queryKey: ["qrs"] });
       toast.success("QR code deleted.");
       router.push("/dashboard/my-qrs");
     } catch (err: unknown) {
@@ -263,16 +307,21 @@ export default function MyQRDetailPage() {
     }
   };
 
+  const updateQrCache = (updated: QRListItem) => {
+    queryClient.setQueryData(["qrs", "detail", id], updated);
+    queryClient.invalidateQueries({ queryKey: ["qrs", "list"] });
+  };
+
   const handleStatusChange = async (newStatus: string) => {
     if (!id || !qr) return;
     setStatusUpdating(true);
     try {
       const updated = await qrsApi.update(id, { status: newStatus });
-      setQr(updated);
+      updateQrCache(updated);
       toast.success(
         newStatus === "active"
           ? "QR code is now active. Scans will work."
-          : "QR code disabled. Scans will see a disabled message."
+          : "QR code disabled. Scans will see a disabled message.",
       );
     } catch (err: unknown) {
       const msg =
@@ -289,12 +338,17 @@ export default function MyQRDetailPage() {
     setLostUpdating(true);
     try {
       const meta = (qr.metadata ?? {}) as Record<string, unknown>;
-      const item = typeof meta.vcardLostItem === "string" ? meta.vcardLostItem : "";
+      const item =
+        typeof meta.vcardLostItem === "string" ? meta.vcardLostItem : "";
       const updated = await qrsApi.update(id, {
         metadata: { ...meta, vcardLostMode: enabled, vcardLostItem: item },
       });
-      setQr(updated);
-      toast.success(enabled ? "Lost & found message enabled." : "Lost & found message disabled.");
+      updateQrCache(updated);
+      toast.success(
+        enabled
+          ? "Lost & found message enabled."
+          : "Lost & found message disabled.",
+      );
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { error?: string } } })?.response?.data
@@ -308,7 +362,10 @@ export default function MyQRDetailPage() {
   const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>("png");
   const [transparentBg, setTransparentBg] = useState(false);
 
-  const handleDownload = async (size: number, format: DownloadFormat = "png") => {
+  const handleDownload = async (
+    size: number,
+    format: DownloadFormat = "png",
+  ) => {
     if (!qr) return;
     setDownloadLoading(true);
     try {
@@ -319,10 +376,12 @@ export default function MyQRDetailPage() {
       const slug = sanitizeFilename(qr.name || qr.id);
       const tab = DOWNLOAD_FORMATS.find((f) => f.id === format);
       const ext = tab?.ext ?? format;
-      const transSuffix = transparentBg && format !== "jpeg" ? "-transparent" : "";
-      const filename = format === "svg"
-        ? `UseQR-${slug}${transSuffix}.${ext}`
-        : `UseQR-${slug}-${size}px${transSuffix}.${ext}`;
+      const transSuffix =
+        transparentBg && format !== "jpeg" ? "-transparent" : "";
+      const filename =
+        format === "svg"
+          ? `UseQR-${slug}${transSuffix}.${ext}`
+          : `UseQR-${slug}-${size}px${transSuffix}.${ext}`;
       await downloadQRAsPng({
         data,
         templateId: (qr.template || "classic") as QRTemplateId,
@@ -390,7 +449,9 @@ export default function MyQRDetailPage() {
 
           {!loading && error && (
             <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-6">
-              <p className="text-sm text-destructive">{error}</p>
+              <p className="text-sm text-destructive">
+                {error instanceof Error ? error.message : "error"}
+              </p>
               <Button asChild variant="outline" className="mt-4">
                 <Link href="/dashboard/my-qrs">Back to My QRs</Link>
               </Button>
@@ -415,7 +476,8 @@ export default function MyQRDetailPage() {
                         Analytics on
                       </span>
                     )}
-                    {!!(qr.metadata as Record<string, unknown> | undefined)?.geoLock && (
+                    {!!(qr.metadata as Record<string, unknown> | undefined)
+                      ?.geoLock && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                         <MapPin className="size-3" />
                         Geo locked
@@ -424,7 +486,10 @@ export default function MyQRDetailPage() {
                   </div>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2 sm:mt-0">
-                  <Button asChild className="bg-emerald-500 hover:bg-emerald-600">
+                  <Button
+                    asChild
+                    className="bg-emerald-500 hover:bg-emerald-600"
+                  >
                     <a
                       href={`/q/${qr.id}`}
                       target="_blank"
@@ -454,29 +519,33 @@ export default function MyQRDetailPage() {
               {qr.status !== "active" && (
                 <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
                   <span className="font-medium">This QR is disabled.</span>{" "}
-                  People who scan it will see a message that the code is disabled. Enable it again in the Status section below.
+                  People who scan it will see a message that the code is
+                  disabled. Enable it again in the Status section below.
                 </div>
               )}
 
-              {qr.contentType === "vcard" && (qr.metadata as { vcardLostMode?: boolean } | undefined)?.vcardLostMode === true && (
-                qr.status !== "active" ? (
+              {qr.contentType === "vcard" &&
+                (qr.metadata as { vcardLostMode?: boolean } | undefined)
+                  ?.vcardLostMode === true &&
+                (qr.status !== "active" ? (
                   <div className="rounded-xl border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-red-700 dark:text-red-400">
-                    <span className="font-medium">QR is disabled.</span>{" "}
-                    People can’t contact you until you enable this QR. Turn it on in the Status section below so your lost & found message works.
+                    <span className="font-medium">QR is disabled.</span> People
+                    can’t contact you until you enable this QR. Turn it on in
+                    the Status section below so your lost & found message works.
                   </div>
                 ) : (
                   <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-400">
                     <span className="font-medium">Lost & found is on.</span>{" "}
-                    When someone scans this QR they’ll see a message that you’ve lost an item and your contact details below.
+                    When someone scans this QR they’ll see a message that you’ve
+                    lost an item and your contact details below.
                   </div>
-                )
-              )}
+                ))}
 
               {/* QR + details card */}
               <div
                 className={cn(
                   "rounded-2xl border border-border bg-card shadow-sm overflow-hidden",
-                  qr.status !== "active" && "opacity-90"
+                  qr.status !== "active" && "opacity-90",
                 )}
               >
                 <div className="grid gap-6 p-6 sm:grid-cols-[auto_1fr]">
@@ -508,7 +577,10 @@ export default function MyQRDetailPage() {
                           <ChevronDown className="size-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="center" className="w-[320px] p-0">
+                      <DropdownMenuContent
+                        align="center"
+                        className="w-[320px] p-0"
+                      >
                         {/* Format tabs */}
                         <div className="flex border-b border-border">
                           {DOWNLOAD_FORMATS.map((tab) => (
@@ -520,7 +592,7 @@ export default function MyQRDetailPage() {
                                 "flex-1 px-3 py-2 text-xs font-medium transition-colors",
                                 downloadFormat === tab.id
                                   ? "border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400"
-                                  : "text-muted-foreground hover:text-foreground"
+                                  : "text-muted-foreground hover:text-foreground",
                               )}
                             >
                               {tab.label}
@@ -531,14 +603,20 @@ export default function MyQRDetailPage() {
                         {/* Format description */}
                         <div className="border-b border-border/50 px-3 py-2">
                           <p className="text-[11px] text-muted-foreground">
-                            {DOWNLOAD_FORMATS.find((f) => f.id === downloadFormat)?.description}
+                            {
+                              DOWNLOAD_FORMATS.find(
+                                (f) => f.id === downloadFormat,
+                              )?.description
+                            }
                           </p>
                         </div>
 
                         {/* Transparent toggle — hidden for JPEG */}
                         {downloadFormat !== "jpeg" && (
                           <div className="flex items-center justify-between border-b border-border/50 px-3 py-2">
-                            <span className="text-xs text-muted-foreground">Transparent background</span>
+                            <span className="text-xs text-muted-foreground">
+                              Transparent background
+                            </span>
                             <Switch
                               checked={transparentBg}
                               onCheckedChange={setTransparentBg}
@@ -549,11 +627,21 @@ export default function MyQRDetailPage() {
 
                         {/* Quality options */}
                         <div className="p-1">
-                          {DOWNLOAD_FORMATS.find((f) => f.id === downloadFormat)?.options.map(
-                            ({ label, size: px, description, useCase, premium }) => (
+                          {DOWNLOAD_FORMATS.find(
+                            (f) => f.id === downloadFormat,
+                          )?.options.map(
+                            ({
+                              label,
+                              size: px,
+                              description,
+                              useCase,
+                              premium,
+                            }) => (
                               <DropdownMenuItem
                                 key={`${downloadFormat}-${px}`}
-                                onClick={() => handleDownload(px, downloadFormat)}
+                                onClick={() =>
+                                  handleDownload(px, downloadFormat)
+                                }
                                 disabled={downloadLoading}
                                 className="flex cursor-pointer items-start gap-3 rounded-md px-3 py-2.5"
                               >
@@ -564,7 +652,10 @@ export default function MyQRDetailPage() {
                                   <span className="flex items-center gap-1.5 text-sm font-medium">
                                     {label}
                                     {premium && (
-                                      <Crown className="size-3 shrink-0 text-amber-500" aria-label="Premium" />
+                                      <Crown
+                                        className="size-3 shrink-0 text-amber-500"
+                                        aria-label="Premium"
+                                      />
                                     )}
                                   </span>
                                   <span className="block text-xs text-muted-foreground">
@@ -575,7 +666,7 @@ export default function MyQRDetailPage() {
                                   </span>
                                 </div>
                               </DropdownMenuItem>
-                            )
+                            ),
                           )}
                         </div>
                       </DropdownMenuContent>
@@ -589,10 +680,12 @@ export default function MyQRDetailPage() {
                       <p
                         className={cn(
                           "mt-1 break-all text-sm text-foreground",
-                          (qr.content?.length ?? 0) > 200 && "line-clamp-4"
+                          (qr.content?.length ?? 0) > 200 && "line-clamp-4",
                         )}
                       >
-                        {getContentSummary(qr.contentType, qr.content) ?? qr.content ?? "—"}
+                        {getContentSummary(qr.contentType, qr.content) ??
+                          qr.content ??
+                          "—"}
                       </p>
                     </div>
                     {qr.contentType === "vcard" && (
@@ -616,7 +709,9 @@ export default function MyQRDetailPage() {
                             size="icon"
                             className={cn(
                               "inline-flex h-7 w-7 shrink-0 hover:text-foreground",
-                              urlCopied ? "text-green-500" : "text-muted-foreground"
+                              urlCopied
+                                ? "text-green-500"
+                                : "text-muted-foreground",
                             )}
                             onClick={() => {
                               const url = qr.payload.startsWith("http")
@@ -660,7 +755,9 @@ export default function MyQRDetailPage() {
                               ) : (
                                 <>
                                   <ShieldOff className="size-4" />
-                                  {qr.status === "disabled" ? "Disabled" : qr.status}
+                                  {qr.status === "disabled"
+                                    ? "Disabled"
+                                    : qr.status}
                                 </>
                               )}
                               <ChevronDown className="size-4" />
@@ -671,14 +768,18 @@ export default function MyQRDetailPage() {
                               onClick={() => handleStatusChange("active")}
                               disabled={qr.status === "active"}
                             >
-                              {qr.status === "active" && <Check className="size-4" />}
+                              {qr.status === "active" && (
+                                <Check className="size-4" />
+                              )}
                               Active — scans work
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleStatusChange("disabled")}
                               disabled={qr.status === "disabled"}
                             >
-                              {qr.status === "disabled" && <Check className="size-4" />}
+                              {qr.status === "disabled" && (
+                                <Check className="size-4" />
+                              )}
                               Disabled — scans see disabled message
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -697,7 +798,7 @@ export default function MyQRDetailPage() {
                 qrId={qr.id}
                 analyticsEnabled={qr.analyticsEnabled}
                 scanCount={qr.scanCount ?? 0}
-                onAnalyticsChange={fetchQr}
+                onAnalyticsChange={() => refetch()}
               />
             </div>
           )}
@@ -705,7 +806,10 @@ export default function MyQRDetailPage() {
       </div>
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent showCloseButton className="sm:max-w-md border-border/80 p-0 overflow-hidden">
+        <DialogContent
+          showCloseButton
+          className="sm:max-w-md border-border/80 p-0 overflow-hidden"
+        >
           <div className="flex flex-col items-start pt-8 pb-2 px-6 text-left">
             <div className="flex flex-row items-center justify-start gap-3">
               <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
@@ -718,7 +822,8 @@ export default function MyQRDetailPage() {
               </DialogHeader>
             </div>
             <DialogDescription className="mt-3 text-left text-sm text-muted-foreground leading-relaxed max-w-[320px]">
-              The scan link will stop working and this cannot be undone. Your analytics data will also be removed.
+              The scan link will stop working and this cannot be undone. Your
+              analytics data will also be removed.
             </DialogDescription>
           </div>
           <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end px-6 pb-6 pt-2 bg-muted/30 border-t border-border/50">
