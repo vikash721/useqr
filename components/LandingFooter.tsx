@@ -7,7 +7,7 @@ import { AppUnderDevelopmentModal } from "@/components/modals/AppUnderDevelopmen
 
 const FOOTER_LINKS = {
   product: [
-    { label: "Features", href: "#" },
+    { label: "Designs", href: "/designs" },
     { label: "Pricing", href: "/pricing" },
     { label: "About", href: "/about" },
     { label: "Download", href: "#" },

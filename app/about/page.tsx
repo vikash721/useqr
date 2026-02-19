@@ -173,7 +173,7 @@ export default function AboutPage() {
                   Ready to use UseQR?
                 </h2>
                 <p className="mt-4 text-zinc-400">
-                  Create your first QR in seconds. No signup to try.
+                  Create your first QR in seconds. Qick signup to try.
                 </p>
                 <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
                   <Link

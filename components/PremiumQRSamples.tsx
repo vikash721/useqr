@@ -41,8 +41,8 @@ export function PremiumQRSamples({
         <p className="mx-auto mt-3 max-w-xl text-center text-sm text-zinc-500">
           High-resolution, scan-ready. Yours in minutes.
         </p>
-        {/* FlyingPosters: scroll / drag to animate — narrowed so page scrolls on the sides */}
-        <div className="relative z-2 mt-16 mx-auto h-[65vh] min-h-[420px] w-full max-w-2xl">
+        {/* FlyingPosters: scroll / drag to animate — full width for scroll capture */}
+        <div className="relative z-2 mt-16 mx-auto h-[65vh] min-h-[420px] w-full">
           <FlyingPosters
             items={QR_SAMPLE_SRCS}
             planeWidth={280}

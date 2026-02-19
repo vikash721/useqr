@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "send-emails": "npx -y tsx scripts/send-emails.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.37.3",

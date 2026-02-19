@@ -188,7 +188,7 @@ export default function SignupPage() {
           Sign up
         </h1>
         <p className="mt-2 text-center text-sm text-zinc-400">
-          Get <span className="font-medium text-emerald-400">2 free QR codes</span> when you join—no card required.
+          Get <span className="font-medium text-emerald-400">5 free QR codes</span> when you join—no card required.
         </p>
 
         <div className="mt-8 flex flex-col gap-3">

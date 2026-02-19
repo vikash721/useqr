@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { Image, Link2, Package, RefreshCw, UserCircle, UtensilsCrossed, ShoppingBag, Building2, Ticket, Stethoscope, BookOpen } from "lucide-react";
+import { GeoFencingSection } from "@/components/GeoFencingSection";
+import { ScrollUseCases } from "@/components/ScrollUseCases";
 import Link from "next/link";
 import DynamicLandingQR from "@/components/DynamicLandingQR";
 import { FAQItem } from "@/components/FAQSection";
@@ -494,8 +496,8 @@ export default function HomeClient({
               </div>
             </section>
 
-            {/* Use cases — solid background, no pixel effect */}
-            <section id="use-cases" className="relative z-10 w-full overflow-hidden bg-black px-6 py-20 lg:py-28">
+            {/* Use cases — heading */}
+            <section id="use-cases" className="relative z-10 w-full bg-black px-6 pt-20 pb-0 lg:pt-28">
               <ScrollFloat
                 containerClassName="text-center my-0"
                 textClassName="font-bold tracking-tight text-white"
@@ -505,62 +507,62 @@ export default function HomeClient({
               <p className="mx-auto mt-6 max-w-xl text-center text-zinc-400">
                 From dynamic content and link management to detailed analytics, our platform has you covered.
               </p>
-              <div className="relative mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-                <UseCaseCard
-                  label="Use case"
-                  number={1}
-                  icon={Image}
-                  title="Any content"
-                  description="Store images, video, links, or web pages in a single QR. No limits—pack what you need."
-                  accent="emerald"
-                  className="min-h-[260px]"
-                />
-                <UseCaseCard
-                  label="Use case"
-                  number={2}
-                  icon={Link2}
-                  title="Web & links"
-                  description="Point to any URL, landing page, or digital asset. One scan, instant access."
-                  accent="emerald"
-                  className="min-h-[260px]"
-                />
-                <UseCaseCard
-                  label="Use case"
-                  number={3}
-                  icon={RefreshCw}
-                  title="Reusable"
-                  description="Update the content behind your QR anytime. Same code, new info—no reprinting."
-                  accent="emerald"
-                  className="min-h-[260px]"
-                />
-                <UseCaseCard
-                  label="Use case"
-                  number={4}
-                  icon={UserCircle}
-                  title="Get found"
-                  description="Put your contact on keys, bags, or gear. Anyone who finds it can reach you."
-                  accent="emerald"
-                  className="min-h-[260px]"
-                />
-                <UseCaseCard
-                  label="Use case"
-                  number={5}
-                  icon={Package}
-                  title="Print & deliver"
-                  description="Order your QR in different styles—stickers, cards, labels. We print and ship."
-                  accent="emerald"
-                  className="min-h-[260px]"
-                />
-              </div>
-              {/* Bottom fade — use case cards fade to black */}
-              <div
-                className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 h-48 bg-gradient-to-t from-black via-black/80 to-transparent sm:h-56"
-                aria-hidden
-              />
             </section>
 
+            {/* Use cases — horizontal scroll driven by vertical scroll */}
+            <ScrollUseCases
+              className="bg-black"
+              items={[
+                {
+                  label: "Use case",
+                  number: 1,
+                  icon: Image,
+                  title: "Any content",
+                  description:
+                    "Store images, video, links, or web pages in a single QR. No limits—pack what you need.",
+                  accent: "emerald",
+                },
+                {
+                  label: "Use case",
+                  number: 2,
+                  icon: Link2,
+                  title: "Web & links",
+                  description:
+                    "Point to any URL, landing page, or digital asset. One scan, instant access.",
+                  accent: "emerald",
+                },
+                {
+                  label: "Use case",
+                  number: 3,
+                  icon: RefreshCw,
+                  title: "Reusable",
+                  description:
+                    "Update the content behind your QR anytime. Same code, new info—no reprinting.",
+                  accent: "emerald",
+                },
+                {
+                  label: "Use case",
+                  number: 4,
+                  icon: UserCircle,
+                  title: "Get found",
+                  description:
+                    "Put your contact on keys, bags, or gear. Anyone who finds it can reach you.",
+                  accent: "emerald",
+                },
+                {
+                  label: "Use case",
+                  number: 5,
+                  icon: Package,
+                  title: "Print & deliver",
+                  description:
+                    "Order your QR in different styles—stickers, cards, labels. We print and ship.",
+                  accent: "emerald",
+                },
+              ]}
+            />
+
             {/* How it works — premium stepper */}
-            <section className="relative z-10 w-full bg-black px-6 py-20 lg:py-28">
+            <section className="relative z-10 w-full bg-black px-6 py-24 lg:py-36">
               <ScrollFloat
                 containerClassName="text-center my-0"
                 textClassName="font-bold tracking-tight text-white"
@@ -568,39 +570,42 @@ export default function HomeClient({
                 How it works
               </ScrollFloat>
               <p className="mx-auto mt-6 max-w-xl text-center text-zinc-400">
-                Three steps to your first QR. No design skills needed.
+                Your first QR in under a minute.
               </p>
-              <div className="mx-auto mt-12 max-w-4xl">
+              <div className="mx-auto mt-16 max-w-4xl lg:mt-20">
                 <HowItWorksSteps
                   steps={[
                     {
                       number: 1,
                       title: "Create",
                       description:
-                        "Choose what to store—a link, image, video, or your contact. Paste a URL or upload a file.",
+                        "Paste a link or upload any file.",
                     },
                     {
                       number: 2,
                       title: "Customize",
                       description:
-                        "Style your QR with colors, shape, and optional logo. Download in high resolution for print.",
+                        "Pick colors, shape, and add your logo.",
                     },
                     {
                       number: 3,
                       title: "Share",
                       description:
-                        "Use it anywhere. Update the content anytime—same code, new info. Reuse forever.",
+                        "Download, print, or share. Update anytime.",
                     },
                     {
                       number: 4,
                       title: "Print & deliver",
                       description:
-                        "Order your QR in different styles—stickers, cards, labels. We print and ship.",
+                        "Order stickers, cards, or labels — shipped to you.",
                     },
                   ]}
                 />
               </div>
             </section>
+
+            {/* Geo Fencing feature highlight */}
+            <GeoFencingSection />
 
             {/* Premium QR samples — FlyingPosters */}
             <PremiumQRSamples />
@@ -764,7 +769,7 @@ export default function HomeClient({
                   <span className="">use<span className="font-bold text-emerald-400">QR</span></span>?
                 </h2>
                 <p className="mt-4 text-zinc-400 sm:text-lg">
-                  Create your first QR in seconds. No signup to try.
+                  Create your first QR in seconds. Quick signup to try.
                 </p>
                 <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
                   <Link

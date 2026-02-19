@@ -155,6 +155,7 @@ export default function RootLayout({
               __html: JSON.stringify(organizationJsonLd),
             }}
           />
+          <ClarityScript />
           <ClerkProvider>
             <PaddleProvider>
               <UserSyncOnMount />

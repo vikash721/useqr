@@ -559,7 +559,7 @@ class Canvas {
 
   onWheel(e: WheelEvent) {
     // Reversed: scroll down (positive deltaY) decreases target
-    this.scroll.target -= e.deltaY * 0.005;
+    this.scroll.target -= e.deltaY * 0.025;
     this.clampScroll();
   }
 
@@ -656,9 +656,9 @@ export default function FlyingPosters({
   ]);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!containerRef.current) return;
 
-    const canvasEl = canvasRef.current;
+    const containerEl = containerRef.current;
 
     const handleWheel = (e: WheelEvent) => {
       if (instanceRef.current && instanceRef.current.canScroll(e.deltaY)) {
@@ -674,12 +674,12 @@ export default function FlyingPosters({
       }
     };
 
-    canvasEl.addEventListener("wheel", handleWheel, { passive: false });
-    canvasEl.addEventListener("touchmove", handleTouchMove, { passive: false });
+    containerEl.addEventListener("wheel", handleWheel, { passive: false });
+    containerEl.addEventListener("touchmove", handleTouchMove, { passive: false });
 
     return () => {
-      canvasEl.removeEventListener("wheel", handleWheel);
-      canvasEl.removeEventListener("touchmove", handleTouchMove);
+      containerEl.removeEventListener("wheel", handleWheel);
+      containerEl.removeEventListener("touchmove", handleTouchMove);
     };
   }, []);
 
